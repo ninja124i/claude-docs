@@ -1,0 +1,48 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
+<title>Claude × Google Docs</title>
+<script src="https://accounts.google.com/gsi/client" async defer></script>
+<style>
+:root {
+  --bg: #0f1117; --sur: #1a1d27; --sur2: #22263a; --bdr: #2e3347;
+  --tx: #e8eaf0; --mu: #8890a8; --g: #4ade80; --gd: #166534;
+  --b: #60a5fa; --bd: #1e3a5f; --pu: #a78bfa; --pd: #3b1f6e;
+  --r: #f87171; --o: #fb923c; --y: #fbbf24;
+  --sh: 0 4px 24px rgba(0,0,0,.4);
+}
+* { box-sizing: border-box; margin: 0; padding: 0; -webkit-tap-highlight-color: transparent; }
+html, body { height: 100%; }
+body { font-family: 'Segoe UI', system-ui, sans-serif; background: var(--bg); color: var(--tx); min-height: 100vh; }
+
+/* ── HEADER ── */
+.hdr { background: var(--sur); border-bottom: 1px solid var(--bdr); padding: .75rem 1.2rem;
+  display: flex; align-items: center; justify-content: space-between; gap: 1rem;
+  position: sticky; top: 0; z-index: 100; }
+.hdr-logo { display: flex; align-items: center; gap: .6rem; }
+.hdr-logo svg { width: 28px; height: 28px; }
+.hdr-title { font-size: 1.1rem; font-weight: 800; background: linear-gradient(135deg, var(--g), var(--b));
+  -webkit-background-clip: text; -webkit-text-fill-color: transparent; background-clip: text; }
+.hdr-status { display: flex; align-items: center; gap: .5rem; font-size: .72rem; color: var(--mu); }
+.dot { width: 8px; height: 8px; border-radius: 50%; background: var(--bdr); flex-shrink: 0; }
+.dot.ok { background: var(--g); box-shadow: 0 0 6px var(--g); }
+.dot.warn { background: var(--y); }
+
+/* ── LAYOUT ── */
+.app { display: grid; grid-template-columns: 340px 1fr; grid-template-rows: 1fr; height: calc(100vh - 53px); }
+@media(max-width: 768px) { .app { grid-template-columns: 1fr; grid-template-rows: auto 1fr; height: auto; } }
+
+/* ── SIDEBAR ── */
+.sidebar { background: var(--sur); border-right: 1px solid var(--bdr); display: flex; flex-direction: column;
+  overflow-y: auto; padding: 1rem; gap: .85rem; }
+@media(max-width: 768px) { .sidebar { border-right: none; border-bottom: 1px solid var(--bdr); } }
+
+.section-label { font-size: .62rem; font-weight: 800; text-transform: uppercase; letter-spacing: .14em;
+  color: var(--mu); margin-bottom: .4rem; }
+
+/* keys */
+.key-row { display: flex; gap: .4rem; align-items: center; }
+.key-inp { flex: 1; background: var(--sur2); border: 1.5px solid var(--bdr); border-radius: 7px;
+  color: var(--tx); font-size: .74rem; padding: .48rem .65rem; outline: none; font-family: mon
