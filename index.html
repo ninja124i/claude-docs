@@ -4,332 +4,373 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Claude × Google Docs</title>
-<script src="https://accounts.google.com/gsi/client" async></script>
 <style>
 *{box-sizing:border-box;margin:0;padding:0;}
-body{font-family:system-ui,sans-serif;background:#0f1117;color:#e8eaf0;min-height:100vh;}
+body{font-family:system-ui,sans-serif;background:#0f1117;color:#e8eaf0;min-height:100vh;font-size:15px;}
 a{color:#60a5fa;}
+::-webkit-scrollbar{width:4px;}
+::-webkit-scrollbar-thumb{background:#2e3347;border-radius:4px;}
 
-/* HEADER */
-.hdr{background:#1a1d27;border-bottom:1px solid #2e3347;padding:.75rem 1.2rem;
+/* ── HEADER ── */
+.hdr{background:#1a1d27;border-bottom:1.5px solid #2e3347;padding:.8rem 1.2rem;
   display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:.6rem;
   position:sticky;top:0;z-index:100;}
-.logo{font-size:1.1rem;font-weight:900;color:#4ade80;}
-.logo span{color:#60a5fa;}
-.statuses{display:flex;gap:.5rem;flex-wrap:wrap;}
-.pill{display:flex;align-items:center;gap:.35rem;background:#22263a;border:1px solid #2e3347;
-  padding:.25rem .65rem;border-radius:20px;font-size:.68rem;color:#8890a8;}
-.dot{width:7px;height:7px;border-radius:50%;background:#2e3347;flex-shrink:0;}
-.dot.green{background:#4ade80;box-shadow:0 0 5px #4ade80;}
-.dot.yellow{background:#fbbf24;}
-.hdr-btns{display:flex;gap:.4rem;}
+.logo{font-size:1.15rem;font-weight:900;color:#4ade80;letter-spacing:-.01em;}
+.logo b{color:#60a5fa;}
+.pills{display:flex;gap:.45rem;flex-wrap:wrap;align-items:center;}
+.pill{display:flex;align-items:center;gap:.32rem;background:#22263a;
+  border:1px solid #2e3347;padding:.26rem .65rem;border-radius:20px;font-size:.67rem;color:#8890a8;}
+.dot{width:7px;height:7px;border-radius:50%;background:#3a3f55;flex-shrink:0;transition:all .3s;}
+.dot.g{background:#4ade80;box-shadow:0 0 6px #4ade80;}
+.dot.y{background:#fbbf24;box-shadow:0 0 5px #fbbf24;}
 
-/* LAYOUT */
-.layout{display:flex;min-height:calc(100vh - 52px);}
-.sidebar{width:300px;flex-shrink:0;background:#1a1d27;border-right:1px solid #2e3347;
-  padding:1rem;display:flex;flex-direction:column;gap:.9rem;overflow-y:auto;}
-.main{flex:1;display:flex;flex-direction:column;overflow:hidden;}
-@media(max-width:700px){
-  .layout{flex-direction:column;}
-  .sidebar{width:100%;border-right:none;border-bottom:1px solid #2e3347;}
+/* ── LAYOUT ── */
+.app{display:flex;height:calc(100vh - 53px);}
+.side{width:290px;flex-shrink:0;background:#1a1d27;border-right:1.5px solid #2e3347;
+  display:flex;flex-direction:column;gap:.8rem;padding:1rem;overflow-y:auto;}
+.main{flex:1;display:flex;flex-direction:column;min-width:0;}
+@media(max-width:680px){
+  .app{flex-direction:column;height:auto;}
+  .side{width:100%;border-right:none;border-bottom:1.5px solid #2e3347;}
 }
 
-/* SIDEBAR ELEMENTS */
-.sec-label{font-size:.6rem;font-weight:800;text-transform:uppercase;letter-spacing:.13em;
-  color:#8890a8;margin-bottom:.3rem;}
-.inp{width:100%;background:#22263a;border:1.5px solid #2e3347;border-radius:8px;
-  color:#e8eaf0;font-size:.8rem;padding:.5rem .7rem;outline:none;font-family:inherit;}
+/* ── FORM ELEMENTS ── */
+.lbl{font-size:.58rem;font-weight:800;text-transform:uppercase;letter-spacing:.13em;
+  color:#8890a8;margin-bottom:.28rem;}
+.inp{width:100%;background:#22263a;border:1.5px solid #2e3347;border-radius:7px;
+  color:#e8eaf0;font-size:.8rem;padding:.48rem .65rem;outline:none;font-family:inherit;
+  transition:border-color .15s;}
 .inp:focus{border-color:#60a5fa;}
-.inp::placeholder{color:#8890a8;}
-textarea.inp{resize:vertical;}
-.row{display:flex;gap:.4rem;}
+.inp::placeholder{color:#555e7a;}
+textarea.inp{resize:vertical;line-height:1.55;}
+.row{display:flex;gap:.38rem;}
 .row .inp{flex:1;}
 
-/* BUTTONS */
-.btn{display:inline-flex;align-items:center;justify-content:center;gap:.35rem;
-  border:none;border-radius:8px;cursor:pointer;font-family:inherit;font-weight:700;
-  font-size:.78rem;padding:.5rem .9rem;min-height:38px;transition:opacity .15s;}
-.btn:hover{opacity:.88;}
-.btn:active{opacity:.7;transform:scale(.97);}
-.btn:disabled{opacity:.35;cursor:not-allowed;transform:none!important;}
-.btn-green{background:#166534;color:#4ade80;border:1px solid #4ade80;}
-.btn-blue{background:#1e3a5f;color:#60a5fa;border:1px solid #60a5fa;}
-.btn-gray{background:#22263a;color:#e8eaf0;border:1px solid #2e3347;}
-.btn-red{background:#3f1515;color:#f87171;border:1px solid #f87171;}
-.btn-full{width:100%;}
+/* ── BUTTONS ── */
+.btn{display:inline-flex;align-items:center;justify-content:center;gap:.32rem;
+  border-radius:7px;cursor:pointer;font-family:inherit;font-weight:700;
+  transition:all .14s;-webkit-appearance:none;touch-action:manipulation;
+  border:none;font-size:.76rem;padding:.46rem .85rem;min-height:36px;}
+.btn:active{transform:scale(.95);}
+.btn:disabled{opacity:.32;cursor:not-allowed;transform:none!important;}
+.g-btn{background:#166534;color:#4ade80;border:1.5px solid #4ade80;}
+.g-btn:hover{background:#145c2d;}
+.b-btn{background:#1e3a5f;color:#60a5fa;border:1.5px solid #60a5fa;}
+.b-btn:hover{background:#1a3356;}
+.gr-btn{background:#22263a;color:#c8ccd8;border:1.5px solid #2e3347;}
+.gr-btn:hover{border-color:#60a5fa;color:#60a5fa;}
+.r-btn{background:#3a1010;color:#f87171;border:1.5px solid #f87171;}
+.full{width:100%;}
 
-/* QUICK BUTTONS GRID */
-.qgrid{display:grid;grid-template-columns:1fr 1fr;gap:.35rem;}
-.qbtn{background:#22263a;border:1px solid #2e3347;border-radius:7px;color:#8890a8;
-  font-size:.64rem;padding:.4rem .5rem;cursor:pointer;text-align:left;font-family:inherit;
-  line-height:1.4;min-height:38px;transition:all .15s;}
-.qbtn:hover{border-color:#60a5fa;color:#60a5fa;background:#1a2535;}
+/* ── GOOGLE SIGN IN BUTTON ── */
+.g-sign-btn{
+  width:100%;min-height:42px;border-radius:8px;cursor:pointer;
+  background:#fff;color:#3c4043;border:1.5px solid #dadce0;
+  font-family:inherit;font-size:.82rem;font-weight:600;
+  display:flex;align-items:center;justify-content:center;gap:.6rem;
+  transition:all .15s;-webkit-appearance:none;touch-action:manipulation;}
+.g-sign-btn:hover{background:#f1f3f4;box-shadow:0 1px 4px rgba(0,0,0,.2);}
+.g-sign-btn:active{transform:scale(.97);}
+.g-sign-btn svg{flex-shrink:0;}
+.g-user-box{display:flex;align-items:center;gap:.5rem;background:#22263a;
+  border:1.5px solid #4ade80;border-radius:8px;padding:.45rem .7rem;}
+.g-user-name{font-size:.76rem;font-weight:700;flex:1;
+  overflow:hidden;text-overflow:ellipsis;white-space:nowrap;color:#4ade80;}
 
-/* TABS */
-.tabs{display:flex;background:#1a1d27;border-bottom:1px solid #2e3347;}
-.tab{flex:1;padding:.55rem;font-size:.72rem;font-weight:700;cursor:pointer;background:none;
-  border:none;border-bottom:2px solid transparent;color:#8890a8;font-family:inherit;
-  transition:all .15s;min-height:40px;}
+/* ── QUICK ACTIONS ── */
+.qa-grid{display:grid;grid-template-columns:1fr 1fr;gap:.32rem;}
+.qa-btn{background:#22263a;border:1.5px solid #2e3347;border-radius:6px;
+  color:#8890a8;font-size:.63rem;padding:.38rem .45rem;cursor:pointer;
+  text-align:left;font-family:inherit;line-height:1.38;min-height:38px;
+  transition:all .14s;touch-action:manipulation;-webkit-appearance:none;}
+.qa-btn:hover,.qa-btn:active{border-color:#60a5fa;color:#b0c8ff;background:#1a2535;}
+
+/* ── TABS ── */
+.tabs{display:flex;background:#1a1d27;border-bottom:1.5px solid #2e3347;flex-shrink:0;}
+.tab{flex:1;padding:.52rem;font-size:.72rem;font-weight:700;cursor:pointer;
+  background:none;border:none;border-bottom:2.5px solid transparent;
+  color:#8890a8;font-family:inherit;transition:all .14s;min-height:40px;}
 .tab.on{color:#60a5fa;border-bottom-color:#60a5fa;}
 
-/* CONTENT */
-.content{flex:1;overflow-y:auto;padding:1.2rem;background:#0f1117;}
-.content-inner{max-width:700px;margin:0 auto;}
+/* ── CONTENT ── */
+.content{flex:1;overflow-y:auto;padding:1.1rem;-webkit-overflow-scrolling:touch;}
+.inner{max-width:680px;margin:0 auto;}
 
-/* DOC DISPLAY */
-.doc-box{background:#1a1d27;border:1px solid #2e3347;border-radius:10px;
-  padding:1.2rem;font-size:.84rem;line-height:1.75;white-space:pre-wrap;
-  word-break:break-word;font-family:Georgia,serif;color:#e8eaf0;}
-.resp-box{background:#22263a;border:1px solid #2e3347;border-radius:10px;
-  padding:1.2rem;font-size:.84rem;line-height:1.75;white-space:pre-wrap;word-break:break-word;}
-
-/* EMPTY STATE */
+/* ── EMPTY STATE ── */
 .empty{display:flex;flex-direction:column;align-items:center;justify-content:center;
-  min-height:300px;text-align:center;gap:.7rem;padding:2rem;}
-.empty-ico{font-size:3rem;}
-.empty h2{font-size:1rem;font-weight:700;}
-.empty p{font-size:.76rem;color:#8890a8;line-height:1.6;max-width:340px;}
+  min-height:280px;text-align:center;gap:.65rem;padding:2rem;color:#8890a8;}
+.empty .ico{font-size:3rem;}
+.empty h2{font-size:.95rem;font-weight:800;color:#c8ccd8;}
+.empty p{font-size:.74rem;line-height:1.65;max-width:320px;}
 
-/* PROMPT BAR */
-.prompt-bar{background:#1a1d27;border-top:1px solid #2e3347;padding:.75rem 1rem;
-  display:flex;flex-direction:column;gap:.5rem;}
-.prompt-row{display:flex;gap:.5rem;align-items:flex-end;}
-.prompt-inp{flex:1;background:#22263a;border:1.5px solid #2e3347;border-radius:10px;
-  color:#e8eaf0;font-size:.84rem;padding:.6rem .85rem;outline:none;font-family:inherit;
-  resize:none;max-height:120px;line-height:1.5;}
+/* ── DOC & RESPONSE BOXES ── */
+.doc-header{display:flex;align-items:center;gap:.45rem;background:#22263a;
+  border:1.5px solid #2e3347;border-radius:8px;padding:.48rem .75rem;
+  margin-bottom:.75rem;flex-wrap:wrap;gap:.4rem;}
+.doc-hname{flex:1;font-size:.76rem;font-weight:700;
+  overflow:hidden;text-overflow:ellipsis;white-space:nowrap;min-width:0;}
+.doc-box{background:#1a1d27;border:1.5px solid #2e3347;border-radius:9px;
+  padding:1.1rem;font-size:.83rem;line-height:1.78;white-space:pre-wrap;
+  word-break:break-word;font-family:Georgia,serif;color:#dde2ee;}
+.resp-header{display:flex;align-items:center;justify-content:space-between;
+  margin-bottom:.7rem;flex-wrap:wrap;gap:.4rem;}
+.resp-label{font-size:.7rem;font-weight:800;color:#4ade80;}
+.resp-actions{display:flex;gap:.35rem;flex-wrap:wrap;}
+.resp-box{background:#22263a;border:1.5px solid #2e3347;border-radius:9px;
+  padding:1.1rem;font-size:.83rem;line-height:1.78;white-space:pre-wrap;word-break:break-word;}
+
+/* ── PROMPT BAR ── */
+.prompt-bar{background:#1a1d27;border-top:1.5px solid #2e3347;
+  padding:.7rem .9rem;display:flex;flex-direction:column;gap:.42rem;flex-shrink:0;}
+.prompt-row{display:flex;gap:.42rem;align-items:flex-end;}
+.prompt-inp{flex:1;background:#22263a;border:1.5px solid #2e3347;border-radius:9px;
+  color:#e8eaf0;font-size:.83rem;padding:.55rem .8rem;outline:none;font-family:inherit;
+  resize:none;max-height:110px;line-height:1.5;transition:border-color .15s;}
 .prompt-inp:focus{border-color:#60a5fa;}
-.prompt-inp::placeholder{color:#8890a8;}
-.send{width:42px;height:42px;border-radius:10px;border:none;cursor:pointer;
+.prompt-inp::placeholder{color:#555e7a;}
+.send{width:42px;height:42px;border-radius:9px;border:none;cursor:pointer;
   background:#166534;color:#4ade80;display:flex;align-items:center;justify-content:center;
-  flex-shrink:0;font-size:1.1rem;transition:all .15s;}
-.send:hover{background:#14532d;}
-.send:active{transform:scale(.93);}
-.send:disabled{opacity:.35;cursor:not-allowed;}
-.hint{font-size:.64rem;color:#8890a8;}
+  flex-shrink:0;font-size:1.15rem;transition:all .15s;touch-action:manipulation;}
+.send:hover{background:#145c2d;}
+.send:active{transform:scale(.91);}
+.send:disabled{opacity:.32;cursor:not-allowed;transform:none;}
+.hint{font-size:.62rem;color:#555e7a;}
 
-/* MODAL / OVERLAY */
-.overlay{position:fixed;inset:0;background:rgba(0,0,0,.75);z-index:500;
+/* ── OVERLAY / MODAL ── */
+.overlay{position:fixed;inset:0;background:rgba(0,0,0,.82);z-index:500;
   display:flex;align-items:center;justify-content:center;padding:1rem;}
-.modal{background:#1a1d27;border:1px solid #2e3347;border-radius:14px;
-  width:100%;max-width:420px;padding:1.5rem;}
-.modal h2{font-size:1rem;font-weight:800;margin-bottom:.3rem;}
-.modal p{font-size:.76rem;color:#8890a8;line-height:1.6;margin-bottom:1rem;}
-.modal-step{display:flex;gap:.6rem;align-items:flex-start;margin-bottom:.8rem;}
-.step-n{width:22px;height:22px;border-radius:50%;background:#1e3a5f;color:#60a5fa;
-  font-size:.66rem;font-weight:800;display:flex;align-items:center;justify-content:center;flex-shrink:0;margin-top:2px;}
-.step-t{font-size:.76rem;line-height:1.55;}
-.divider{height:1px;background:#2e3347;margin:.8rem 0;}
+.modal{background:#1a1d27;border:1.5px solid #2e3347;border-radius:13px;
+  width:100%;max-width:430px;padding:1.5rem;max-height:90vh;overflow-y:auto;}
+.modal h2{font-size:.98rem;font-weight:900;margin-bottom:.35rem;}
+.modal p{font-size:.74rem;color:#8890a8;line-height:1.6;margin-bottom:.9rem;}
+.mstep{display:flex;gap:.55rem;align-items:flex-start;margin-bottom:.75rem;}
+.msn{width:21px;height:21px;border-radius:50%;background:#1e3a5f;color:#60a5fa;
+  font-size:.64rem;font-weight:900;display:flex;align-items:center;justify-content:center;
+  flex-shrink:0;margin-top:2px;}
+.mst{font-size:.74rem;line-height:1.55;color:#c8ccd8;}
+.mst strong{color:#e8eaf0;}
+.divider{height:1px;background:#2e3347;margin:.75rem 0;}
 .code{font-family:monospace;background:#22263a;border:1px solid #2e3347;
-  border-radius:4px;padding:1px 6px;font-size:.72rem;color:#60a5fa;}
+  border-radius:4px;padding:1px 6px;font-size:.7rem;color:#60a5fa;}
 
-/* TOAST */
+/* ── TOAST ── */
 .toasts{position:fixed;bottom:1rem;left:50%;transform:translateX(-50%);
-  z-index:999;display:flex;flex-direction:column;align-items:center;gap:.4rem;pointer-events:none;}
+  z-index:999;display:flex;flex-direction:column;align-items:center;gap:.35rem;pointer-events:none;}
 .toast{background:#1a1d27;border:1px solid #2e3347;border-radius:20px;
-  padding:.45rem 1rem;font-size:.76rem;white-space:nowrap;
-  animation:tin .22s ease;}
+  padding:.42rem 1rem;font-size:.74rem;white-space:nowrap;box-shadow:0 4px 16px rgba(0,0,0,.4);
+  animation:tin .2s ease;}
 .toast.ok{border-color:#4ade80;color:#4ade80;}
 .toast.err{border-color:#f87171;color:#f87171;}
 @keyframes tin{from{opacity:0;transform:translateY(8px);}to{opacity:1;transform:translateY(0);}}
 
-/* SPINNER */
-.spin{display:inline-block;width:13px;height:13px;
-  border:2px solid rgba(96,165,250,.2);border-top-color:#60a5fa;
-  border-radius:50%;animation:sp .6s linear infinite;}
+/* ── SPINNER ── */
+.spin{display:inline-block;width:12px;height:12px;
+  border:2px solid rgba(96,165,250,.18);border-top-color:#60a5fa;
+  border-radius:50%;animation:sp .55s linear infinite;vertical-align:middle;margin-right:5px;}
 @keyframes sp{to{transform:rotate(360deg);}}
 
-/* Doc info */
-.doc-info{display:flex;align-items:center;gap:.5rem;background:#22263a;
-  border:1px solid #2e3347;border-radius:8px;padding:.5rem .75rem;margin-bottom:.8rem;}
-.doc-info-name{flex:1;font-size:.78rem;font-weight:700;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;}
-
-/* Response header */
-.resp-hdr{display:flex;align-items:center;justify-content:space-between;
-  margin-bottom:.75rem;flex-wrap:wrap;gap:.5rem;}
-.resp-label{font-size:.72rem;font-weight:700;color:#4ade80;display:flex;align-items:center;gap:.35rem;}
-.resp-btns{display:flex;gap:.4rem;flex-wrap:wrap;}
-
-/* Google signed in */
-.g-user{display:flex;align-items:center;gap:.5rem;background:#22263a;
-  border:1px solid #2e3347;border-radius:8px;padding:.45rem .7rem;}
-.g-avatar{width:26px;height:26px;border-radius:50%;}
-.g-name{font-size:.74rem;font-weight:700;flex:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;}
-
-/* history */
-.hist-item{background:#22263a;border:1px solid #2e3347;border-radius:6px;
-  padding:.4rem .6rem;font-size:.68rem;cursor:pointer;margin-bottom:.28rem;
-  overflow:hidden;text-overflow:ellipsis;white-space:nowrap;color:#8890a8;transition:all .15s;}
-.hist-item:hover{border-color:#60a5fa;color:#60a5fa;}
+/* ── STATUS BAR ── */
+#statusBar{font-size:.68rem;color:#8890a8;margin-top:.4rem;line-height:1.55;display:none;}
+#statusBar.vis{display:block;}
+#statusBar.ok{color:#4ade80;}
+#statusBar.err{color:#f87171;}
 </style>
 </head>
 <body>
 
-<!-- SETUP OVERLAY -->
-<div class="overlay" id="setupOverlay">
+<!-- ══════════ SETUP MODAL ══════════ -->
+<div class="overlay" id="setupModal">
   <div class="modal">
     <h2>🔑 Enter Your Anthropic API Key</h2>
-    <p>This is saved only on your device. Never shared anywhere.</p>
-    <div class="modal-step">
-      <div class="step-n">1</div>
-      <div class="step-t">Go to <a href="https://console.anthropic.com" target="_blank">console.anthropic.com</a> → Sign in → <strong>API Keys</strong> → <strong>Create Key</strong></div>
+    <p>Saved only on your device. Never sent anywhere except Anthropic's servers.</p>
+    <div class="mstep">
+      <div class="msn">1</div>
+      <div class="mst">Go to <a href="https://console.anthropic.com" target="_blank"><strong>console.anthropic.com</strong></a> → Sign in → <strong>API Keys</strong> → <strong>Create Key</strong></div>
     </div>
-    <div class="modal-step">
-      <div class="step-n">2</div>
-      <div class="step-t">Paste your key below. It starts with <span class="code">sk-ant-</span></div>
+    <div class="mstep">
+      <div class="msn">2</div>
+      <div class="mst">Add billing credits at <a href="https://console.anthropic.com/settings/billing" target="_blank">console.anthropic.com/settings/billing</a></div>
     </div>
-    <input class="inp" type="password" id="setupKey" placeholder="sk-ant-api03-..." style="margin-bottom:.7rem;font-family:monospace" autocomplete="off">
-    <div style="font-size:.68rem;color:#8890a8;margin-bottom:.8rem">⚠️ Add billing credits at console.anthropic.com/settings/billing or it won't work</div>
-    <button class="btn btn-green btn-full" onclick="saveKey()">Save & Continue →</button>
+    <div class="mstep">
+      <div class="msn">3</div>
+      <div class="mst">Paste your key below — starts with <span class="code">sk-ant-</span></div>
+    </div>
+    <input class="inp" type="password" id="setupKeyInp"
+      placeholder="sk-ant-api03-..." style="margin-bottom:.65rem;font-family:monospace;font-size:.8rem;" autocomplete="off">
+    <button class="btn g-btn full" style="font-size:.84rem;padding:.6rem;" onclick="saveApiKey(false)">
+      Save & Continue →
+    </button>
   </div>
 </div>
 
-<!-- SETTINGS OVERLAY -->
-<div class="overlay" id="settingsOverlay" style="display:none">
+<!-- ══════════ SETTINGS MODAL ══════════ -->
+<div class="overlay" id="settingsModal" style="display:none">
   <div class="modal">
     <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:1rem">
       <h2 style="margin:0">⚙️ Settings</h2>
-      <button onclick="closeSettings()" style="background:none;border:none;color:#8890a8;font-size:1.2rem;cursor:pointer">✕</button>
+      <button onclick="closeModal('settingsModal')"
+        style="background:none;border:none;color:#8890a8;font-size:1.25rem;cursor:pointer;padding:.1rem .3rem;">✕</button>
     </div>
-    <div class="sec-label">Anthropic API Key</div>
-    <div class="row" style="margin-bottom:.7rem">
-      <input class="inp" type="password" id="settKey" placeholder="sk-ant-..." style="font-family:monospace" autocomplete="off">
-      <button class="btn btn-green" onclick="saveKey(true)">Save</button>
+    <div class="lbl">Anthropic API Key</div>
+    <div class="row" style="margin-bottom:.65rem">
+      <input class="inp" type="password" id="settingsKeyInp"
+        placeholder="sk-ant-..." style="font-family:monospace;" autocomplete="off">
+      <button class="btn g-btn" onclick="saveApiKey(true)">Save</button>
     </div>
     <div class="divider"></div>
-    <div style="font-size:.72rem;color:#8890a8;margin-bottom:.8rem;line-height:1.6">Your API key is stored only in this browser. It is never sent anywhere except directly to Anthropic.</div>
-    <button class="btn btn-red btn-full" onclick="clearAll()">🗑️ Clear All Data & Reset</button>
+    <div style="font-size:.7rem;color:#8890a8;margin-bottom:.8rem;line-height:1.6">
+      Your API key is stored only in your browser's local storage and is never shared with anyone.
+    </div>
+    <button class="btn r-btn full" onclick="resetApp()">🗑️ Clear All Data & Reset</button>
   </div>
 </div>
 
-<!-- HEADER -->
+<!-- ══════════ HEADER ══════════ -->
 <div class="hdr">
-  <div class="logo">Claude <span>×</span> Google Docs</div>
-  <div class="statuses">
+  <div class="logo">Claude <b>×</b> Google Docs</div>
+  <div class="pills">
     <div class="pill"><div class="dot" id="dotC"></div><span id="lblC">Claude: no key</span></div>
     <div class="pill"><div class="dot" id="dotG"></div><span id="lblG">Google: signed out</span></div>
   </div>
-  <div class="hdr-btns">
-    <button class="btn btn-gray" onclick="openSettings()" style="padding:.35rem .6rem;font-size:.72rem">⚙️ Settings</button>
-  </div>
+  <button class="btn gr-btn" onclick="openModal('settingsModal')"
+    style="padding:.32rem .6rem;font-size:.7rem;">⚙️ Settings</button>
 </div>
 
-<!-- LAYOUT -->
-<div class="layout">
+<!-- ══════════ APP ══════════ -->
+<div class="app">
 
   <!-- SIDEBAR -->
-  <div class="sidebar">
+  <div class="side">
 
-    <!-- Google Sign In -->
+    <!-- STEP 1: GOOGLE SIGN IN -->
     <div>
-      <div class="sec-label">Step 1 — Sign in with Google</div>
-      <div id="gBtnArea"><div id="gBtn"></div></div>
-      <div id="gUserArea" style="display:none">
-        <div class="g-user">
-          <img class="g-avatar" id="gAvatar" src="" alt="">
-          <div class="g-name" id="gName"></div>
-          <button class="btn btn-gray" onclick="signOut()" style="padding:.28rem .5rem;font-size:.64rem">Out</button>
+      <div class="lbl">Step 1 — Sign in with Google</div>
+      <div id="signInArea">
+        <button class="g-sign-btn" id="signInBtn" onclick="signInWithGoogle()">
+          <svg width="18" height="18" viewBox="0 0 24 24">
+            <path fill="#4285F4" d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z"/>
+            <path fill="#34A853" d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z"/>
+            <path fill="#FBBC05" d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l3.66-2.84z"/>
+            <path fill="#EA4335" d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z"/>
+          </svg>
+          Sign in with Google
+        </button>
+      </div>
+      <div id="signedInArea" style="display:none">
+        <div class="g-user-box">
+          <span style="font-size:1.1rem">👤</span>
+          <div class="g-user-name" id="userName">Connected</div>
+          <button class="btn gr-btn" onclick="signOutGoogle()"
+            style="padding:.24rem .5rem;font-size:.62rem;flex-shrink:0;">Sign out</button>
         </div>
       </div>
     </div>
 
-    <!-- Doc URL -->
+    <!-- STEP 2: LOAD DOC -->
     <div>
-      <div class="sec-label">Step 2 — Load a Google Doc</div>
+      <div class="lbl">Step 2 — Load a Google Doc</div>
       <div class="row">
-        <input class="inp" id="docUrl" placeholder="Paste Google Doc link…" autocomplete="off" style="font-size:.74rem">
-        <button class="btn btn-blue" onclick="loadDoc()">Load</button>
+        <input class="inp" id="docUrlInp" placeholder="Paste Google Doc link here…"
+          autocomplete="off" style="font-size:.73rem;">
+        <button class="btn b-btn" onclick="loadDoc()">Load</button>
       </div>
-      <div id="docLoaded" style="display:none;margin-top:.5rem">
-        <div style="font-size:.68rem;color:#4ade80">✅ Doc loaded: <span id="docNameSmall"></span></div>
-      </div>
+      <div id="docLoadedMsg" style="display:none;margin-top:.4rem;font-size:.67rem;color:#4ade80;"></div>
     </div>
 
-    <!-- Quick Prompts -->
+    <!-- QUICK ACTIONS -->
     <div>
-      <div class="sec-label">Quick Actions (tap to run)</div>
-      <div class="qgrid">
-        <button class="qbtn" onclick="qp('Summarize this document in clear bullet points')">📝 Summarize</button>
-        <button class="qbtn" onclick="qp('Fix all grammar and spelling mistakes')">✏️ Fix Grammar</button>
-        <button class="qbtn" onclick="qp('Improve the writing quality and clarity')">✨ Improve</button>
-        <button class="qbtn" onclick="qp('Translate this entire document to Hindi')">🌐 → Hindi</button>
-        <button class="qbtn" onclick="qp('Add a professional conclusion paragraph')">➕ Conclusion</button>
-        <button class="qbtn" onclick="qp('Create a table of contents from the headings')">📋 TOC</button>
-        <button class="qbtn" onclick="qp('Make this document more formal and professional')">🎩 Formal</button>
-        <button class="qbtn" onclick="qp('List all key points and main ideas')">💡 Key Points</button>
-        <button class="qbtn" onclick="qp('Shorten this document keeping all key info')">🗜️ Shorten</button>
-        <button class="qbtn" onclick="qp('Expand with more detail and examples')">📈 Expand</button>
+      <div class="lbl">Quick Actions — tap to run</div>
+      <div class="qa-grid">
+        <button class="qa-btn" onclick="runQuick('Summarize this document in clear bullet points')">📝 Summarize</button>
+        <button class="qa-btn" onclick="runQuick('Fix all grammar and spelling mistakes in this document')">✏️ Fix Grammar</button>
+        <button class="qa-btn" onclick="runQuick('Improve the writing quality and clarity of this document')">✨ Improve</button>
+        <button class="qa-btn" onclick="runQuick('Translate this entire document to Hindi')">🌐 → Hindi</button>
+        <button class="qa-btn" onclick="runQuick('Add a professional conclusion paragraph at the end of this document')">➕ Conclusion</button>
+        <button class="qa-btn" onclick="runQuick('Create a table of contents based on the headings in this document')">📋 TOC</button>
+        <button class="qa-btn" onclick="runQuick('Make this document more formal and professional in tone')">🎩 Formal</button>
+        <button class="qa-btn" onclick="runQuick('List all key points and main ideas from this document')">💡 Key Points</button>
+        <button class="qa-btn" onclick="runQuick('Shorten this document while keeping all key information')">🗜️ Shorten</button>
+        <button class="qa-btn" onclick="runQuick('Expand this document with more detail and examples')">📈 Expand</button>
       </div>
     </div>
 
-    <!-- History -->
-    <div id="histSec" style="display:none">
-      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:.35rem">
-        <div class="sec-label" style="margin:0">Recent</div>
-        <button onclick="clearHist()" style="font-size:.6rem;color:#8890a8;background:none;border:none;cursor:pointer">Clear</button>
+    <!-- HISTORY -->
+    <div id="histArea" style="display:none">
+      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:.3rem">
+        <div class="lbl" style="margin:0">Recent Prompts</div>
+        <button onclick="clearHistory()"
+          style="font-size:.6rem;color:#8890a8;background:none;border:none;cursor:pointer;">Clear</button>
       </div>
       <div id="histList"></div>
     </div>
 
-    <!-- Create New Doc -->
+    <!-- CREATE NEW DOC -->
     <div>
-      <div class="sec-label">Create a Brand New Doc</div>
-      <input class="inp" id="newTitle" placeholder="Document title…" style="margin-bottom:.4rem" autocomplete="off">
-      <textarea class="inp" id="newPrompt" rows="3" placeholder="What should Claude write? e.g. Write a report about solar energy with introduction, benefits and conclusion…"></textarea>
-      <button class="btn btn-green btn-full" onclick="createDoc()" style="margin-top:.4rem">✨ Generate &amp; Create</button>
-      <div id="createStatus" style="font-size:.7rem;color:#8890a8;margin-top:.4rem;display:none"></div>
+      <div class="lbl">Create a Brand New Google Doc</div>
+      <input class="inp" id="newDocTitle" placeholder="Document title…"
+        style="margin-bottom:.38rem;" autocomplete="off">
+      <textarea class="inp" id="newDocPrompt" rows="3"
+        placeholder="What should Claude write? e.g. A report about climate change with introduction, key facts and conclusion…"></textarea>
+      <button class="btn g-btn full" onclick="createNewDoc()" style="margin-top:.38rem;">
+        ✨ Generate &amp; Create Doc
+      </button>
+      <div id="createStatus" style="display:none;font-size:.7rem;margin-top:.38rem;line-height:1.55;"></div>
     </div>
 
   </div>
 
-  <!-- MAIN -->
+  <!-- MAIN PANEL -->
   <div class="main">
 
-    <!-- TABS -->
     <div class="tabs">
-      <button class="tab on" id="t1" onclick="showTab(1)">📄 Document</button>
-      <button class="tab" id="t2" onclick="showTab(2)">🤖 Claude Response</button>
+      <button class="tab on" id="tab1Btn" onclick="switchTab(1)">📄 Document</button>
+      <button class="tab" id="tab2Btn" onclick="switchTab(2)">🤖 Claude Response</button>
     </div>
 
-    <!-- CONTENT -->
     <div class="content">
-      <div class="content-inner">
+      <div class="inner">
 
-        <!-- TAB 1: Document -->
+        <!-- TAB 1: DOCUMENT -->
         <div id="tab1">
           <div class="empty" id="docEmpty">
-            <div class="empty-ico">📄</div>
+            <div class="ico">📄</div>
             <h2>No document loaded yet</h2>
-            <p>Paste a Google Docs link in the sidebar and click <strong>Load</strong>.<br><br>Then type any instruction below — Claude will do it!</p>
+            <p>Sign in with Google above, then paste a Google Doc link in the sidebar and click <strong>Load</strong>.<br><br>After that, type any instruction below and Claude will do it!</p>
           </div>
-          <div id="docDisplay" style="display:none">
-            <div class="doc-info">
+          <div id="docLoaded" style="display:none">
+            <div class="doc-header">
               <span>📄</span>
-              <div class="doc-info-name" id="docTitle">Untitled</div>
-              <button class="btn btn-gray" onclick="loadDoc()" style="padding:.28rem .5rem;font-size:.64rem">🔄</button>
-              <button class="btn btn-gray" id="openBtn" style="padding:.28rem .5rem;font-size:.64rem">🔗 Open</button>
+              <div class="doc-hname" id="docTitleDisplay">Untitled</div>
+              <button class="btn gr-btn" onclick="loadDoc()"
+                style="padding:.24rem .48rem;font-size:.62rem;flex-shrink:0;">🔄 Refresh</button>
+              <button class="btn gr-btn" id="openDocBtn"
+                style="padding:.24rem .48rem;font-size:.62rem;flex-shrink:0;">🔗 Open</button>
             </div>
             <div class="doc-box" id="docBody"></div>
           </div>
         </div>
 
-        <!-- TAB 2: Response -->
+        <!-- TAB 2: RESPONSE -->
         <div id="tab2" style="display:none">
           <div class="empty" id="respEmpty">
-            <div class="empty-ico">🤖</div>
+            <div class="ico">🤖</div>
             <h2>No response yet</h2>
-            <p>Load a document then type your instruction below. Claude's answer will appear here.</p>
+            <p>Load a document, then type your instruction in the box below. Claude's answer will appear here.</p>
           </div>
-          <div id="respDisplay" style="display:none">
-            <div class="resp-hdr">
+          <div id="respLoaded" style="display:none">
+            <div class="resp-header">
               <div class="resp-label">🤖 Claude's Response</div>
-              <div class="resp-btns">
-                <button class="btn btn-gray" onclick="copyResp()" style="font-size:.68rem;padding:.3rem .6rem">📋 Copy</button>
-                <button class="btn btn-green" id="writeBtn" onclick="writeToDoc()" style="font-size:.68rem;padding:.3rem .6rem;display:none">✍️ Replace Doc</button>
-                <button class="btn btn-blue" id="appendBtn" onclick="appendToDoc()" style="font-size:.68rem;padding:.3rem .6rem;display:none">➕ Append to Doc</button>
+              <div class="resp-actions">
+                <button class="btn gr-btn" onclick="copyResponse()"
+                  style="padding:.26rem .55rem;font-size:.66rem;">📋 Copy</button>
+                <button class="btn g-btn" id="replaceDocBtn" onclick="replaceDoc()"
+                  style="padding:.26rem .55rem;font-size:.66rem;display:none;">✍️ Replace Doc</button>
+                <button class="btn b-btn" id="appendDocBtn" onclick="appendDoc()"
+                  style="padding:.26rem .55rem;font-size:.66rem;display:none;">➕ Append to Doc</button>
               </div>
             </div>
             <div class="resp-box" id="respBody"></div>
-            <div id="writeStatus" style="font-size:.72rem;color:#4ade80;margin-top:.6rem;display:none"></div>
+            <div id="writeStatus" class="vis" style="display:none;font-size:.7rem;margin-top:.5rem;line-height:1.55;"></div>
           </div>
         </div>
 
@@ -339,215 +380,225 @@ textarea.inp{resize:vertical;}
     <!-- PROMPT BAR -->
     <div class="prompt-bar">
       <div class="prompt-row">
-        <textarea class="prompt-inp" id="promptBox" rows="1"
-          placeholder="Type anything… e.g. 'Summarize this' or 'Fix grammar' or 'Add introduction'"
-          oninput="resize(this)" onkeydown="onKey(event)"></textarea>
-        <button class="send" id="sendBtn" onclick="send()">➤</button>
+        <textarea class="prompt-inp" id="promptInp" rows="1"
+          placeholder="Ask Claude anything… e.g. 'Summarize this' · 'Fix grammar' · 'Translate to Hindi' · 'Add a conclusion'"
+          oninput="autoGrow(this)" onkeydown="onEnter(event)"></textarea>
+        <button class="send" id="sendBtn" onclick="sendPrompt()">➤</button>
       </div>
-      <div class="hint" id="hintText">💡 Load a document first, then tell Claude what to do with it</div>
+      <div class="hint" id="hintMsg">💡 Sign in with Google → Load a doc → Type your instruction</div>
     </div>
 
   </div>
 </div>
 
 <!-- TOASTS -->
-<div class="toasts" id="toasts"></div>
+<div class="toasts" id="toastArea"></div>
 
+<!-- ══════════════════════════════════════════════════════
+     JAVASCRIPT
+══════════════════════════════════════════════════════ -->
 <script>
-// ═══════════════════════════════════════════
-// CONFIG
-// ═══════════════════════════════════════════
-const CLIENT_ID = '1056907226300-f2csllpfbk162dbdi13ug1tl90fre70t.apps.googleusercontent.com';
-const SCOPES = 'https://www.googleapis.com/auth/documents https://www.googleapis.com/auth/drive.file https://www.googleapis.com/auth/drive.readonly';
+'use strict';
 
-// ═══════════════════════════════════════════
-// STATE
-// ═══════════════════════════════════════════
-let token = null;
-let userInfo = null;
-let docId = null;
-let docText = '';
-let lastResp = '';
-let busy = false;
-let hist = JSON.parse(localStorage.getItem('hist') || '[]');
+// ─────────────────────────────────────────
+// CONFIGURATION
+// ─────────────────────────────────────────
+var GOOGLE_CLIENT_ID = '1056907226300-f2csllpfbk162dbdi13ug1tl90fre70t.apps.googleusercontent.com';
+var GOOGLE_SCOPE     = 'https://www.googleapis.com/auth/documents https://www.googleapis.com/auth/drive.file https://www.googleapis.com/auth/drive.readonly';
 
-// ═══════════════════════════════════════════
-// BOOT
-// ═══════════════════════════════════════════
-window.onload = function() {
-  var k = localStorage.getItem('ak');
-  if (k) {
-    document.getElementById('setupOverlay').style.display = 'none';
-    document.getElementById('settKey').value = k;
-    setClaudeStatus(true);
-  }
-  renderHist();
-  waitForGoogle();
+// ─────────────────────────────────────────
+// APP STATE
+// ─────────────────────────────────────────
+var state = {
+  googleToken : null,   // OAuth access token
+  docId       : null,   // current doc ID
+  docText     : '',     // current doc plain text
+  lastResp    : '',     // last Claude response
+  busy        : false,  // is Claude thinking?
+  history     : []      // prompt history
 };
 
-function waitForGoogle() {
-  if (window.google && google.accounts) {
-    initGoogle();
-  } else {
-    setTimeout(waitForGoogle, 300);
+// ─────────────────────────────────────────
+// STARTUP
+// ─────────────────────────────────────────
+document.addEventListener('DOMContentLoaded', function() {
+
+  // 1. Restore API key
+  var key = lsGet('apikey');
+  if (key) {
+    closeModal('setupModal');
+    setDot('C', 'g');
+    setText('lblC', 'Claude: ready');
   }
+
+  // 2. Restore history
+  try { state.history = JSON.parse(lsGet('hist') || '[]'); } catch(e) { state.history = []; }
+  renderHistory();
+
+  // 3. Check for OAuth token in URL hash (after Google redirect)
+  var tok = extractHashToken();
+  if (tok) {
+    state.googleToken = tok;
+    ssSet('gt', tok);          // save to sessionStorage
+    clearUrlHash();
+    onGoogleConnected();
+    toast('✅ Signed in to Google!', 'ok');
+  }
+
+  // 4. Restore Google token from sessionStorage (within same browser session)
+  if (!state.googleToken) {
+    var saved = ssGet('gt');
+    if (saved) {
+      state.googleToken = saved;
+      onGoogleConnected();
+    }
+  }
+});
+
+// ─────────────────────────────────────────
+// GOOGLE SIGN IN
+// Uses implicit OAuth flow — opens Google popup,
+// comes back to same page with token in URL hash.
+// No SDK needed. Works on all browsers/devices.
+// ─────────────────────────────────────────
+function signInWithGoogle() {
+  var here = window.location.href.split('?')[0].split('#')[0];
+  var url   = 'https://accounts.google.com/o/oauth2/v2/auth'
+            + '?client_id='    + encodeURIComponent(GOOGLE_CLIENT_ID)
+            + '&redirect_uri=' + encodeURIComponent(here)
+            + '&response_type=token'
+            + '&scope='        + encodeURIComponent(GOOGLE_SCOPE)
+            + '&prompt=select_account';
+  window.location.href = url;
+  // Page will redirect to Google, user signs in,
+  // Google sends them back here with #access_token=...
 }
 
-function initGoogle() {
+function onGoogleConnected() {
+  setDot('G', 'g');
+  setText('lblG', 'Google: connected');
+  show('signedInArea');
+  hide('signInArea');
+  setText('userName', 'Google Account ✓');
+  setHint('✅ Google connected! Paste a doc link and click Load.');
+}
+
+function signOutGoogle() {
+  state.googleToken = null;
+  ssRemove('gt');
+  setDot('G', '');
+  setText('lblG', 'Google: signed out');
+  show('signInArea');
+  hide('signedInArea');
+  toast('Signed out of Google');
+  setHint('💡 Sign in with Google → Load a doc → Type your instruction');
+}
+
+// Extract access_token from URL hash (#access_token=xxx&token_type=Bearer...)
+function extractHashToken() {
   try {
-    google.accounts.id.initialize({
-      client_id: CLIENT_ID,
-      callback: gotIdToken,
-      auto_select: false
+    var hash = window.location.hash;
+    if (!hash || !hash.includes('access_token')) return null;
+    var params = {};
+    hash.replace(/^#/, '').split('&').forEach(function(pair) {
+      var parts = pair.split('=');
+      params[parts[0]] = decodeURIComponent(parts[1] || '');
     });
-    google.accounts.id.renderButton(
-      document.getElementById('gBtn'),
-      { theme: 'filled_black', size: 'medium', width: 240 }
-    );
-  } catch(e) {
-    document.getElementById('gBtn').innerHTML = '<button class="btn btn-gray btn-full" onclick="manualSignIn()">Sign in with Google</button>';
-  }
+    return params['access_token'] || null;
+  } catch(e) { return null; }
 }
 
-function manualSignIn() {
-  requestToken();
-}
-
-function gotIdToken(resp) {
+function clearUrlHash() {
   try {
-    var parts = resp.credential.split('.');
-    var payload = JSON.parse(atob(parts[1].replace(/-/g,'+').replace(/_/g,'/')));
-    userInfo = payload;
-    showUserArea();
+    window.history.replaceState('', document.title,
+      window.location.pathname + window.location.search);
   } catch(e) {}
-  requestToken();
 }
 
-function requestToken() {
-  if (!window.google) return;
-  try {
-    var client = google.accounts.oauth2.initTokenClient({
-      client_id: CLIENT_ID,
-      scope: SCOPES,
-      callback: function(resp) {
-        if (resp.error) { toast('Auth error: ' + resp.error, 'err'); return; }
-        token = resp.access_token;
-        setGoogleStatus(true);
-        toast('✅ Connected to Google!', 'ok');
-        if (!userInfo) showUserArea();
-      }
-    });
-    client.requestAccessToken({ prompt: '' });
-  } catch(e) { toast('Google auth error: ' + e.message, 'err'); }
-}
-
-function showUserArea() {
-  document.getElementById('gBtnArea').style.display = 'none';
-  document.getElementById('gUserArea').style.display = 'block';
-  if (userInfo) {
-    document.getElementById('gName').textContent = userInfo.name || userInfo.email || 'Signed in';
-    if (userInfo.picture) document.getElementById('gAvatar').src = userInfo.picture;
-  } else {
-    document.getElementById('gName').textContent = 'Signed in';
-  }
-  setGoogleStatus(true);
-}
-
-function signOut() {
-  token = null; userInfo = null;
-  document.getElementById('gUserArea').style.display = 'none';
-  document.getElementById('gBtnArea').style.display = 'block';
-  setGoogleStatus(false);
-  toast('Signed out');
-}
-
-// ═══════════════════════════════════════════
-// STATUS
-// ═══════════════════════════════════════════
-function setClaudeStatus(ok) {
-  document.getElementById('dotC').className = 'dot ' + (ok ? 'green' : 'yellow');
-  document.getElementById('lblC').textContent = ok ? 'Claude: ready' : 'Claude: no key';
-}
-function setGoogleStatus(ok) {
-  document.getElementById('dotG').className = 'dot ' + (ok ? 'green' : '');
-  document.getElementById('lblG').textContent = ok ? 'Google: connected' : 'Google: signed out';
-}
-
-// ═══════════════════════════════════════════
+// ─────────────────────────────────────────
 // API KEY
-// ═══════════════════════════════════════════
-function saveKey(fromSettings) {
-  var k = document.getElementById(fromSettings ? 'settKey' : 'setupKey').value.trim();
-  if (!k) { toast('Paste your API key first', 'err'); return; }
-  if (!k.startsWith('sk-ant-')) { toast('Key must start with sk-ant-', 'err'); return; }
-  localStorage.setItem('ak', k);
-  document.getElementById('setupOverlay').style.display = 'none';
-  if (fromSettings) closeSettings();
-  setClaudeStatus(true);
+// ─────────────────────────────────────────
+function saveApiKey(fromSettings) {
+  var inp = fromSettings ? 'settingsKeyInp' : 'setupKeyInp';
+  var key = document.getElementById(inp).value.trim();
+  if (!key) { toast('Please paste your API key first', 'err'); return; }
+  if (!key.startsWith('sk-ant-')) { toast('Key must start with sk-ant-', 'err'); return; }
+  lsSet('apikey', key);
+  closeModal('setupModal');
+  if (fromSettings) closeModal('settingsModal');
+  setDot('C', 'g');
+  setText('lblC', 'Claude: ready');
   toast('✅ API key saved!', 'ok');
 }
-function getKey() { return localStorage.getItem('ak') || ''; }
-function openSettings() { document.getElementById('settingsOverlay').style.display = 'flex'; }
-function closeSettings() { document.getElementById('settingsOverlay').style.display = 'none'; }
-function clearAll() {
-  if (!confirm('Clear everything and reset?')) return;
-  localStorage.clear();
-  location.reload();
+
+function getApiKey() { return lsGet('apikey') || ''; }
+
+function resetApp() {
+  if (!confirm('Clear all data and reset?')) return;
+  try { localStorage.clear(); sessionStorage.clear(); } catch(e) {}
+  window.location.reload();
 }
 
-// ═══════════════════════════════════════════
-// LOAD DOC
-// ═══════════════════════════════════════════
-function getDocId(url) {
+// ─────────────────────────────────────────
+// LOAD GOOGLE DOC
+// ─────────────────────────────────────────
+function getDocIdFromUrl(url) {
   var m = url.match(/\/document\/d\/([a-zA-Z0-9_-]+)/);
   return m ? m[1] : null;
 }
 
 async function loadDoc() {
-  if (!token) { toast('Sign in to Google first', 'err'); return; }
-  var url = document.getElementById('docUrl').value.trim();
+  if (!state.googleToken) {
+    toast('Please sign in to Google first (Step 1 above)', 'err'); return;
+  }
+  var url = document.getElementById('docUrlInp').value.trim();
   if (!url) { toast('Paste a Google Doc link first', 'err'); return; }
-  var id = getDocId(url);
-  if (!id) { toast('Cannot find Doc ID in that link', 'err'); return; }
+  var id = getDocIdFromUrl(url);
+  if (!id) { toast('Cannot find Doc ID in that URL', 'err'); return; }
 
-  docId = id;
-  setHint('⏳ Loading document…');
+  state.docId = id;
+  setHint('⏳ Loading your document…');
 
   try {
-    var r = await fetch('https://docs.googleapis.com/v1/documents/' + id, {
-      headers: { 'Authorization': 'Bearer ' + token }
-    });
-    if (!r.ok) {
-      var e = await r.json();
-      throw new Error(e.error ? e.error.message : 'Failed to load');
-    }
-    var doc = await r.json();
-    docText = extractText(doc);
-    var title = doc.title || 'Untitled';
+    var resp = await gFetch('https://docs.googleapis.com/v1/documents/' + id);
+    var doc  = await resp.json();
 
-    document.getElementById('docEmpty').style.display = 'none';
-    document.getElementById('docDisplay').style.display = 'block';
-    document.getElementById('docTitle').textContent = title;
-    document.getElementById('docBody').textContent = docText;
-    document.getElementById('openBtn').onclick = function() { window.open('https://docs.google.com/document/d/' + id, '_blank'); };
-    document.getElementById('docLoaded').style.display = 'block';
-    document.getElementById('docNameSmall').textContent = title;
-    setHint('✅ Doc loaded! Now type what you want Claude to do.');
-    showTab(1);
+    if (!resp.ok) {
+      var msg = (doc.error && doc.error.message) || 'Failed to load document';
+      throw new Error(msg);
+    }
+
+    state.docText = docToText(doc);
+    var title = doc.title || 'Untitled Document';
+
+    // Update UI
+    setText('docTitleDisplay', title);
+    document.getElementById('docBody').textContent = state.docText || '(Document appears empty)';
+    document.getElementById('openDocBtn').onclick = function() {
+      window.open('https://docs.google.com/document/d/' + id, '_blank');
+    };
+    show('docLoaded');
+    hide('docEmpty');
+    setText('docLoadedMsg', '✅ Loaded: ' + title);
+    show('docLoadedMsg');
+    switchTab(1);
+    setHint('✅ Doc loaded! Now type what you want Claude to do with it.');
     toast('✅ Document loaded!', 'ok');
+
   } catch(err) {
-    toast('Error: ' + err.message, 'err');
-    setHint('❌ Failed to load doc. Make sure you are signed in and have access.');
+    toast('Load failed: ' + err.message, 'err');
+    setHint('❌ Could not load. Make sure Google is signed in and you have access to the doc.');
   }
 }
 
-function extractText(doc) {
+// Convert Google Doc JSON → plain text
+function docToText(doc) {
   var out = '';
   if (!doc.body || !doc.body.content) return out;
   doc.body.content.forEach(function(el) {
     if (el.paragraph) {
       (el.paragraph.elements || []).forEach(function(pe) {
-        if (pe.textRun) out += pe.textRun.content || '';
+        if (pe.textRun && pe.textRun.content) out += pe.textRun.content;
       });
     } else if (el.table) {
       (el.table.tableRows || []).forEach(function(row) {
@@ -555,11 +606,11 @@ function extractText(doc) {
           (cell.content || []).forEach(function(c) {
             if (c.paragraph) {
               (c.paragraph.elements || []).forEach(function(pe) {
-                if (pe.textRun) out += pe.textRun.content || '';
+                if (pe.textRun && pe.textRun.content) out += pe.textRun.content;
               });
-              out += '\t';
             }
           });
+          out += '\t';
         });
         out += '\n';
       });
@@ -568,308 +619,408 @@ function extractText(doc) {
   return out;
 }
 
-// ═══════════════════════════════════════════
-// SEND PROMPT
-// ═══════════════════════════════════════════
-async function send() {
-  var p = document.getElementById('promptBox').value.trim();
-  if (!p || busy) return;
-  var k = getKey();
-  if (!k) { toast('Add API key in ⚙️ Settings', 'err'); return; }
+// ─────────────────────────────────────────
+// CALL CLAUDE API
+// Uses anthropic-dangerous-allow-browser header
+// which is the official way for browser apps
+// ─────────────────────────────────────────
+async function callClaude(system, userMessage) {
+  var key = getApiKey();
+  if (!key) throw new Error('No API key. Add it in ⚙️ Settings.');
 
-  addHist(p);
-  busy = true;
-  document.getElementById('sendBtn').disabled = true;
-  showTab(2);
-  document.getElementById('respEmpty').style.display = 'none';
-  document.getElementById('respDisplay').style.display = 'block';
-  document.getElementById('respBody').innerHTML = '<div class="spin"></div> Claude is thinking…';
-  document.getElementById('writeBtn').style.display = 'none';
-  document.getElementById('appendBtn').style.display = 'none';
-  document.getElementById('writeStatus').style.display = 'none';
+  var resp = await fetch('https://api.anthropic.com/v1/messages', {
+    method: 'POST',
+    headers: {
+      'Content-Type'                      : 'application/json',
+      'x-api-key'                         : key,
+      'anthropic-version'                 : '2023-06-01',
+      'anthropic-dangerous-allow-browser' : 'true'
+    },
+    body: JSON.stringify({
+      model      : 'claude-sonnet-4-20250514',
+      max_tokens : 4096,
+      system     : system,
+      messages   : [{ role: 'user', content: userMessage }]
+    })
+  });
 
-  var isEdit = /fix|correct|grammar|spell|rewrite|improve|edit|replace|translate|format|shorten|expand|make.*formal|make.*casual/i.test(p);
-  var isAppend = /add|append|insert|write a|create a section|conclusion|introduction|new paragraph/i.test(p);
+  var data = await resp.json();
 
-  var sys = '';
-  if (!docText) {
-    sys = 'You are a helpful writing assistant. Help the user with their request.';
-  } else if (isEdit) {
-    sys = 'You are an expert document editor. The user gives you a Google Doc and an instruction. Return the COMPLETE revised document — nothing else. No explanations. No preamble. No code blocks. Just the full revised text ready to paste back.';
-  } else if (isAppend) {
-    sys = 'You are an expert writer. Return ONLY the new content to add to the document. Do not repeat existing content. No explanations.';
-  } else {
-    sys = 'You are a helpful document analyst. The user shares a Google Doc and asks a question. Be helpful, clear and concise.';
+  if (!resp.ok) {
+    var errMsg = (data.error && data.error.message) || ('API error ' + resp.status);
+    throw new Error(errMsg);
   }
 
-  var userMsg = docText
-    ? 'DOCUMENT:\n---\n' + docText.slice(0, 14000) + '\n---\n\nINSTRUCTION: ' + p
-    : p;
+  return data.content.map(function(c) { return c.text || ''; }).join('');
+}
+
+// ─────────────────────────────────────────
+// SEND PROMPT
+// ─────────────────────────────────────────
+async function sendPrompt() {
+  var prompt = document.getElementById('promptInp').value.trim();
+  if (!prompt || state.busy) return;
+  if (!getApiKey()) { toast('Add your API key in ⚙️ Settings', 'err'); return; }
+
+  // Save to history
+  addHistory(prompt);
+
+  state.busy = true;
+  document.getElementById('sendBtn').disabled = true;
+  switchTab(2);
+  hide('respEmpty');
+  show('respLoaded');
+  document.getElementById('respBody').innerHTML =
+    '<span class="spin"></span> Claude is thinking…';
+  hide('writeStatus');
+  hide('replaceDocBtn');
+  hide('appendDocBtn');
+
+  // Decide what kind of task this is
+  var isEdit   = /fix|correct|grammar|spell|rewrite|improve|edit|replace|translate|format|shorten|expand|formal|casual|rephrase/i.test(prompt);
+  var isAppend = /\badd\b|append|insert|write a|new section|new paragraph|\bconclusion\b|\bintroduction\b/i.test(prompt);
+
+  // Build system prompt
+  var system, userMsg;
+
+  if (!state.docText) {
+    // No doc loaded — just answer the question
+    system  = 'You are a helpful writing assistant. Help the user with their request.';
+    userMsg = prompt;
+  } else if (isEdit) {
+    system  = 'You are an expert document editor.\n'
+            + 'The user gives you a Google Doc and an editing instruction.\n'
+            + 'Return the COMPLETE revised document text — nothing else.\n'
+            + 'No explanations. No preamble. No "Here is the revised document".\n'
+            + 'Just the full text, ready to paste back into Google Docs.';
+    userMsg = 'DOCUMENT:\n---\n'
+            + state.docText.slice(0, 15000)
+            + '\n---\n\nINSTRUCTION: ' + prompt;
+  } else if (isAppend) {
+    system  = 'You are an expert writer.\n'
+            + 'The user wants to add new content to their Google Doc.\n'
+            + 'Return ONLY the new content to add — do NOT repeat existing content.\n'
+            + 'No explanations. No preamble. Just the new text.';
+    userMsg = 'EXISTING DOCUMENT:\n---\n'
+            + state.docText.slice(0, 15000)
+            + '\n---\n\nINSTRUCTION: ' + prompt;
+  } else {
+    system  = 'You are a helpful document analyst.\n'
+            + 'The user shares a Google Doc and asks a question about it.\n'
+            + 'Be clear, accurate and concise.';
+    userMsg = 'DOCUMENT:\n---\n'
+            + state.docText.slice(0, 15000)
+            + '\n---\n\nQUESTION: ' + prompt;
+  }
 
   try {
-    var r = await fetch('https://api.anthropic.com/v1/messages', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({
-        model: 'claude-sonnet-4-20250514',
-        max_tokens: 4096,
-        system: sys,
-        messages: [{ role: 'user', content: userMsg }]
-      })
-    });
-    if (!r.ok) {
-      var e = await r.json();
-      throw new Error(e.error ? e.error.message : 'API error ' + r.status);
-    }
-    var d = await r.json();
-    lastResp = d.content.map(function(c) { return c.text || ''; }).join('');
-    document.getElementById('respBody').textContent = lastResp;
-    document.getElementById('promptBox').value = '';
-    resize(document.getElementById('promptBox'));
+    var result = await callClaude(system, userMsg);
+    state.lastResp = result;
+    document.getElementById('respBody').textContent = result;
+    document.getElementById('promptInp').value = '';
+    autoGrow(document.getElementById('promptInp'));
 
-    if (isEdit) {
-      document.getElementById('writeBtn').style.display = 'flex';
-      document.getElementById('appendBtn').style.display = 'flex';
-    } else if (isAppend) {
-      document.getElementById('appendBtn').style.display = 'flex';
+    // Show write-back buttons
+    if (state.docId && (isEdit || isAppend)) {
+      show('replaceDocBtn');
+      show('appendDocBtn');
+    } else if (state.docId && isAppend) {
+      show('appendDocBtn');
     }
     toast('✅ Done!', 'ok');
+
   } catch(err) {
     document.getElementById('respBody').textContent = '❌ Error: ' + err.message;
     toast('Error: ' + err.message, 'err');
   }
 
-  busy = false;
+  state.busy = false;
   document.getElementById('sendBtn').disabled = false;
 }
 
-// ═══════════════════════════════════════════
-// WRITE TO DOC
-// ═══════════════════════════════════════════
-async function writeToDoc() {
-  if (!token) { toast('Sign in to Google first', 'err'); return; }
-  if (!docId) { toast('No document loaded', 'err'); return; }
-  if (!lastResp) return;
-  if (!confirm('Replace the entire document with Claude\'s response?')) return;
+// ─────────────────────────────────────────
+// WRITE / APPEND TO GOOGLE DOC
+// ─────────────────────────────────────────
+async function replaceDoc() {
+  if (!state.googleToken) { toast('Sign in to Google first', 'err'); return; }
+  if (!state.docId)       { toast('No document loaded', 'err'); return; }
+  if (!state.lastResp)    return;
+  if (!confirm('Replace the ENTIRE document with Claude\'s response?')) return;
 
-  showWriteStatus('✍️ Writing to Google Doc…');
+  showWriteStatus('✍️ Writing to Google Doc…', '');
   try {
-    var gr = await fetch('https://docs.googleapis.com/v1/documents/' + docId, {
-      headers: { 'Authorization': 'Bearer ' + token }
-    });
+    // Get current doc to find end index
+    var gr  = await gFetch('https://docs.googleapis.com/v1/documents/' + state.docId);
     var doc = await gr.json();
-    var end = 1;
-    (doc.body.content || []).forEach(function(el) { if (el.endIndex > end) end = el.endIndex; });
+    if (!gr.ok) throw new Error((doc.error && doc.error.message) || 'Could not read doc');
 
-    var reqs = [];
-    if (end > 2) reqs.push({ deleteContentRange: { range: { startIndex: 1, endIndex: end - 1 } } });
-    reqs.push({ insertText: { location: { index: 1 }, text: lastResp } });
-
-    var wr = await fetch('https://docs.googleapis.com/v1/documents/' + docId + ':batchUpdate', {
-      method: 'POST',
-      headers: { 'Authorization': 'Bearer ' + token, 'Content-Type': 'application/json' },
-      body: JSON.stringify({ requests: reqs })
+    var endIdx = 1;
+    (doc.body.content || []).forEach(function(el) {
+      if (el.endIndex && el.endIndex > endIdx) endIdx = el.endIndex;
     });
-    if (!wr.ok) { var e = await wr.json(); throw new Error(e.error ? e.error.message : 'Write failed'); }
 
-    docText = lastResp;
-    document.getElementById('docBody').textContent = docText;
-    showWriteStatus('✅ Document updated successfully!');
+    var requests = [];
+    if (endIdx > 2) {
+      requests.push({ deleteContentRange: { range: { startIndex: 1, endIndex: endIdx - 1 } } });
+    }
+    requests.push({ insertText: { location: { index: 1 }, text: state.lastResp } });
+
+    var wr = await gFetch(
+      'https://docs.googleapis.com/v1/documents/' + state.docId + ':batchUpdate',
+      { method: 'POST', body: JSON.stringify({ requests: requests }) }
+    );
+    var wrData = await wr.json();
+    if (!wr.ok) throw new Error((wrData.error && wrData.error.message) || 'Write failed');
+
+    state.docText = state.lastResp;
+    document.getElementById('docBody').textContent = state.docText;
+    showWriteStatus('✅ Document updated in Google Docs!', 'ok');
     toast('✅ Written to Google Doc!', 'ok');
+
   } catch(e) {
-    showWriteStatus('❌ ' + e.message);
+    showWriteStatus('❌ ' + e.message, 'err');
     toast('Write error: ' + e.message, 'err');
   }
 }
 
-async function appendToDoc() {
-  if (!token) { toast('Sign in to Google first', 'err'); return; }
-  if (!docId) { toast('No document loaded', 'err'); return; }
-  if (!lastResp) return;
+async function appendDoc() {
+  if (!state.googleToken) { toast('Sign in to Google first', 'err'); return; }
+  if (!state.docId)       { toast('No document loaded', 'err'); return; }
+  if (!state.lastResp)    return;
 
-  showWriteStatus('➕ Appending to Google Doc…');
+  showWriteStatus('➕ Appending to Google Doc…', '');
   try {
-    var gr = await fetch('https://docs.googleapis.com/v1/documents/' + docId, {
-      headers: { 'Authorization': 'Bearer ' + token }
-    });
+    var gr  = await gFetch('https://docs.googleapis.com/v1/documents/' + state.docId);
     var doc = await gr.json();
-    var end = 1;
-    (doc.body.content || []).forEach(function(el) { if (el.endIndex > end) end = el.endIndex; });
-    var idx = Math.max(1, end - 1);
+    if (!gr.ok) throw new Error((doc.error && doc.error.message) || 'Could not read doc');
 
-    var wr = await fetch('https://docs.googleapis.com/v1/documents/' + docId + ':batchUpdate', {
-      method: 'POST',
-      headers: { 'Authorization': 'Bearer ' + token, 'Content-Type': 'application/json' },
-      body: JSON.stringify({ requests: [{ insertText: { location: { index: idx }, text: '\n\n' + lastResp } }] })
+    var endIdx = 1;
+    (doc.body.content || []).forEach(function(el) {
+      if (el.endIndex && el.endIndex > endIdx) endIdx = el.endIndex;
     });
-    if (!wr.ok) { var e = await wr.json(); throw new Error(e.error ? e.error.message : 'Append failed'); }
 
-    docText += '\n\n' + lastResp;
-    document.getElementById('docBody').textContent = docText;
-    showWriteStatus('✅ Content appended!');
-    toast('✅ Appended to doc!', 'ok');
+    var insertAt = Math.max(1, endIdx - 1);
+    var wr = await gFetch(
+      'https://docs.googleapis.com/v1/documents/' + state.docId + ':batchUpdate',
+      { method: 'POST', body: JSON.stringify({ requests: [
+        { insertText: { location: { index: insertAt }, text: '\n\n' + state.lastResp } }
+      ]}) }
+    );
+    var wrData = await wr.json();
+    if (!wr.ok) throw new Error((wrData.error && wrData.error.message) || 'Append failed');
+
+    state.docText += '\n\n' + state.lastResp;
+    document.getElementById('docBody').textContent = state.docText;
+    showWriteStatus('✅ Content appended to Google Doc!', 'ok');
+    toast('✅ Appended!', 'ok');
+
   } catch(e) {
-    showWriteStatus('❌ ' + e.message);
+    showWriteStatus('❌ ' + e.message, 'err');
     toast('Append error: ' + e.message, 'err');
   }
 }
 
-// ═══════════════════════════════════════════
-// CREATE NEW DOC
-// ═══════════════════════════════════════════
-async function createDoc() {
-  if (!token) { toast('Sign in to Google first', 'err'); return; }
-  var k = getKey();
-  if (!k) { toast('Add API key in ⚙️ Settings', 'err'); return; }
-  var title = document.getElementById('newTitle').value.trim() || 'Claude Generated Document';
-  var prompt = document.getElementById('newPrompt').value.trim();
-  if (!prompt) { toast('Describe what you want Claude to write', 'err'); return; }
+// ─────────────────────────────────────────
+// CREATE NEW GOOGLE DOC
+// ─────────────────────────────────────────
+async function createNewDoc() {
+  if (!state.googleToken) { toast('Sign in to Google first ↑', 'err'); return; }
+  if (!getApiKey())       { toast('Add API key in ⚙️ Settings', 'err'); return; }
 
-  setCreateStatus('🤖 Claude is writing…');
+  var title  = document.getElementById('newDocTitle').value.trim()  || 'Claude Generated Document';
+  var prompt = document.getElementById('newDocPrompt').value.trim();
+  if (!prompt) { toast('Describe what Claude should write', 'err'); return; }
+
+  setCreateStatus('🤖 Claude is writing your document…', '');
+
   try {
-    var r = await fetch('https://api.anthropic.com/v1/messages', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({
-        model: 'claude-sonnet-4-20250514', max_tokens: 4096,
-        system: 'You are an expert writer. Write a complete, well-structured document. Return ONLY the document text — no explanations, no preamble.',
-        messages: [{ role: 'user', content: 'Write: ' + prompt }]
-      })
-    });
-    if (!r.ok) { var e = await r.json(); throw new Error(e.error ? e.error.message : 'Claude error'); }
-    var d = await r.json();
-    var content = d.content.map(function(c) { return c.text || ''; }).join('');
+    // Step 1: Claude writes
+    var content = await callClaude(
+      'You are an expert writer. Write a complete, well-structured document. '
+      + 'Return ONLY the document text — no explanations, no preamble whatsoever.',
+      'Write this document: ' + prompt
+    );
 
-    setCreateStatus('📄 Creating Google Doc…');
-    var cr = await fetch('https://docs.googleapis.com/v1/documents', {
-      method: 'POST',
-      headers: { 'Authorization': 'Bearer ' + token, 'Content-Type': 'application/json' },
-      body: JSON.stringify({ title: title })
-    });
-    if (!cr.ok) { var e2 = await cr.json(); throw new Error(e2.error ? e2.error.message : 'Create failed'); }
+    setCreateStatus('📄 Creating Google Doc…', '');
+
+    // Step 2: Create the doc
+    var cr     = await gFetch('https://docs.googleapis.com/v1/documents',
+                   { method: 'POST', body: JSON.stringify({ title: title }) });
     var newDoc = await cr.json();
+    if (!cr.ok) throw new Error((newDoc.error && newDoc.error.message) || 'Could not create doc');
+
     var newId = newDoc.documentId;
 
-    var wr = await fetch('https://docs.googleapis.com/v1/documents/' + newId + ':batchUpdate', {
-      method: 'POST',
-      headers: { 'Authorization': 'Bearer ' + token, 'Content-Type': 'application/json' },
-      body: JSON.stringify({ requests: [{ insertText: { location: { index: 1 }, text: content } }] })
-    });
-    if (!wr.ok) { var e3 = await wr.json(); throw new Error(e3.error ? e3.error.message : 'Write failed'); }
+    // Step 3: Write content into it
+    var wr = await gFetch(
+      'https://docs.googleapis.com/v1/documents/' + newId + ':batchUpdate',
+      { method: 'POST', body: JSON.stringify({ requests: [
+        { insertText: { location: { index: 1 }, text: content } }
+      ]}) }
+    );
+    var wrData = await wr.json();
+    if (!wr.ok) throw new Error((wrData.error && wrData.error.message) || 'Write failed');
 
-    var url = 'https://docs.google.com/document/d/' + newId;
-    setCreateStatus('✅ Done! <a href="' + url + '" target="_blank" style="color:#4ade80;font-weight:700">Open your new Google Doc →</a>');
+    var docUrl = 'https://docs.google.com/document/d/' + newId;
+    setCreateStatus(
+      '✅ Done! <a href="' + docUrl + '" target="_blank" style="color:#4ade80;font-weight:700;">Open your new Google Doc →</a>',
+      'ok'
+    );
     toast('✅ New Google Doc created!', 'ok');
 
-    // Load it
-    document.getElementById('docUrl').value = url;
-    docId = newId; docText = content;
-    document.getElementById('docTitle').textContent = title;
+    // Auto-load the new doc
+    document.getElementById('docUrlInp').value = docUrl;
+    state.docId   = newId;
+    state.docText = content;
+    setText('docTitleDisplay', title);
     document.getElementById('docBody').textContent = content;
-    document.getElementById('docEmpty').style.display = 'none';
-    document.getElementById('docDisplay').style.display = 'block';
-    document.getElementById('openBtn').onclick = function() { window.open(url, '_blank'); };
-    document.getElementById('docLoaded').style.display = 'block';
-    document.getElementById('docNameSmall').textContent = title;
+    show('docLoaded'); hide('docEmpty');
+    setText('docLoadedMsg', '✅ Loaded: ' + title);
+    show('docLoadedMsg');
+    document.getElementById('openDocBtn').onclick = function() { window.open(docUrl, '_blank'); };
+
   } catch(e) {
-    setCreateStatus('❌ ' + e.message);
+    setCreateStatus('❌ Error: ' + e.message, 'err');
     toast('Error: ' + e.message, 'err');
   }
 }
 
-// ═══════════════════════════════════════════
+// ─────────────────────────────────────────
 // QUICK PROMPT
-// ═══════════════════════════════════════════
-function qp(text) {
-  document.getElementById('promptBox').value = text;
-  resize(document.getElementById('promptBox'));
-  send();
+// ─────────────────────────────────────────
+function runQuick(text) {
+  document.getElementById('promptInp').value = text;
+  autoGrow(document.getElementById('promptInp'));
+  sendPrompt();
 }
 
-// ═══════════════════════════════════════════
+// ─────────────────────────────────────────
 // HISTORY
-// ═══════════════════════════════════════════
-function addHist(p) {
-  hist.unshift(p);
-  if (hist.length > 10) hist = hist.slice(0, 10);
-  localStorage.setItem('hist', JSON.stringify(hist));
-  renderHist();
+// ─────────────────────────────────────────
+function addHistory(p) {
+  state.history = [p].concat(state.history.filter(function(h) { return h !== p; })).slice(0, 8);
+  try { lsSet('hist', JSON.stringify(state.history)); } catch(e) {}
+  renderHistory();
 }
-function renderHist() {
-  if (!hist.length) return;
-  document.getElementById('histSec').style.display = 'block';
+
+function renderHistory() {
+  if (!state.history.length) { hide('histArea'); return; }
+  show('histArea');
   var el = document.getElementById('histList');
   el.innerHTML = '';
-  hist.slice(0, 5).forEach(function(h) {
+  state.history.slice(0, 5).forEach(function(h) {
     var d = document.createElement('div');
-    d.className = 'hist-item';
+    d.style.cssText = 'background:#22263a;border:1.5px solid #2e3347;border-radius:6px;'
+      + 'padding:.38rem .6rem;font-size:.67rem;cursor:pointer;margin-bottom:.26rem;'
+      + 'overflow:hidden;text-overflow:ellipsis;white-space:nowrap;color:#8890a8;';
     d.textContent = h;
     d.title = h;
     d.onclick = function() {
-      document.getElementById('promptBox').value = h;
-      resize(document.getElementById('promptBox'));
+      document.getElementById('promptInp').value = h;
+      autoGrow(document.getElementById('promptInp'));
     };
     el.appendChild(d);
   });
 }
-function clearHist() {
-  hist = [];
-  localStorage.removeItem('hist');
-  document.getElementById('histSec').style.display = 'none';
+
+function clearHistory() {
+  state.history = [];
+  try { lsSet('hist', '[]'); } catch(e) {}
+  hide('histArea');
 }
 
-// ═══════════════════════════════════════════
+// ─────────────────────────────────────────
 // TABS
-// ═══════════════════════════════════════════
-function showTab(n) {
-  [1,2].forEach(function(i) {
-    document.getElementById('tab' + i).style.display = i === n ? 'block' : 'none';
-    document.getElementById('t' + i).classList.toggle('on', i === n);
+// ─────────────────────────────────────────
+function switchTab(n) {
+  [1, 2].forEach(function(i) {
+    document.getElementById('tab' + i).style.display      = i === n ? 'block' : 'none';
+    document.getElementById('tab' + i + 'Btn').className  = 'tab' + (i === n ? ' on' : '');
   });
 }
 
-// ═══════════════════════════════════════════
-// COPY
-// ═══════════════════════════════════════════
-function copyResp() {
-  if (!lastResp) return;
-  navigator.clipboard.writeText(lastResp)
+// ─────────────────────────────────────────
+// COPY RESPONSE
+// ─────────────────────────────────────────
+function copyResponse() {
+  if (!state.lastResp) return;
+  navigator.clipboard.writeText(state.lastResp)
     .then(function() { toast('📋 Copied!', 'ok'); })
-    .catch(function() { toast('Copy failed', 'err'); });
+    .catch(function() { toast('Copy failed — select text manually', 'err'); });
 }
 
-// ═══════════════════════════════════════════
-// UTILS
-// ═══════════════════════════════════════════
-function resize(el) {
-  el.style.height = 'auto';
-  el.style.height = Math.min(el.scrollHeight, 120) + 'px';
+// ─────────────────────────────────────────
+// GOOGLE API FETCH HELPER
+// ─────────────────────────────────────────
+function gFetch(url, opts) {
+  opts = opts || {};
+  var headers = { 'Authorization': 'Bearer ' + state.googleToken };
+  if (opts.body) headers['Content-Type'] = 'application/json';
+  return fetch(url, {
+    method  : opts.method || 'GET',
+    headers : headers,
+    body    : opts.body || undefined
+  });
 }
-function onKey(e) {
-  if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); send(); }
+
+// ─────────────────────────────────────────
+// STORAGE HELPERS
+// ─────────────────────────────────────────
+function lsGet(k)    { try { return localStorage.getItem(k); }    catch(e) { return null; } }
+function lsSet(k,v)  { try { localStorage.setItem(k, v); }        catch(e) {} }
+function ssGet(k)    { try { return sessionStorage.getItem(k); }   catch(e) { return null; } }
+function ssSet(k,v)  { try { sessionStorage.setItem(k, v); }       catch(e) {} }
+function ssRemove(k) { try { sessionStorage.removeItem(k); }       catch(e) {} }
+
+// ─────────────────────────────────────────
+// DOM HELPERS
+// ─────────────────────────────────────────
+function show(id) { var el = document.getElementById(id); if (el) el.style.display = 'block'; }
+function hide(id) { var el = document.getElementById(id); if (el) el.style.display = 'none'; }
+function setText(id, t) { var el = document.getElementById(id); if (el) el.textContent = t; }
+function setHint(t) { setText('hintMsg', t); }
+function setDot(which, cls) {
+  var el = document.getElementById('dot' + which);
+  if (el) el.className = 'dot' + (cls ? ' ' + cls : '');
 }
-function setHint(t) { document.getElementById('hintText').textContent = t; }
-function showWriteStatus(m) {
+
+function showWriteStatus(msg, type) {
   var el = document.getElementById('writeStatus');
   el.style.display = 'block';
-  el.innerHTML = m;
+  el.innerHTML     = msg;
+  el.style.color   = type === 'ok' ? '#4ade80' : type === 'err' ? '#f87171' : '#8890a8';
 }
-function setCreateStatus(m) {
+
+function setCreateStatus(msg, type) {
   var el = document.getElementById('createStatus');
   el.style.display = 'block';
-  el.innerHTML = m;
+  el.innerHTML     = msg;
+  el.style.color   = type === 'ok' ? '#4ade80' : type === 'err' ? '#f87171' : '#8890a8';
 }
+
+function openModal(id)  { document.getElementById(id).style.display = 'flex'; }
+function closeModal(id) { document.getElementById(id).style.display = 'none'; }
+
+function autoGrow(el) {
+  el.style.height = 'auto';
+  el.style.height = Math.min(el.scrollHeight, 110) + 'px';
+}
+
+function onEnter(e) {
+  if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); sendPrompt(); }
+}
+
 function toast(msg, type) {
-  var w = document.getElementById('toasts');
-  var t = document.createElement('div');
-  t.className = 'toast' + (type ? ' ' + type : '');
+  var area = document.getElementById('toastArea');
+  var t    = document.createElement('div');
+  t.className   = 'toast' + (type ? ' ' + type : '');
   t.textContent = msg;
-  w.appendChild(t);
+  area.appendChild(t);
   setTimeout(function() {
-    t.style.transition = 'opacity .4s';
-    t.style.opacity = '0';
-    setTimeout(function() { t.remove(); }, 400);
-  }, 2800);
+    t.style.transition = 'opacity .35s';
+    t.style.opacity    = '0';
+    setTimeout(function() { if (t.parentNode) t.parentNode.removeChild(t); }, 360);
+  }, 3000);
 }
 </script>
 </body>
