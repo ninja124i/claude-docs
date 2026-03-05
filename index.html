@@ -324,7 +324,8 @@ textarea.inp{resize:vertical;line-height:1.55;}
 
     <div class="tabs">
       <button class="tab on" id="tab1Btn" onclick="switchTab(1)">📄 Document</button>
-      <button class="tab" id="tab2Btn" onclick="switchTab(2)">🤖 Claude Response</button>
+      <button class="tab" id="tab2Btn" onclick="switchTab(2)">🤖 Response</button>
+      <button class="tab" id="tab3Btn" onclick="switchTab(3)">📑 PDF / Image</button>
     </div>
 
     <div class="content">
@@ -371,6 +372,81 @@ textarea.inp{resize:vertical;line-height:1.55;}
             </div>
             <div class="resp-box" id="respBody"></div>
             <div id="writeStatus" class="vis" style="display:none;font-size:.7rem;margin-top:.5rem;line-height:1.55;"></div>
+          </div>
+        </div>
+
+      </div>
+
+        <!-- TAB 3: PDF UPLOAD -->
+        <div id="tab3" style="display:none">
+          <div style="max-width:600px">
+            <h2 style="font-size:.95rem;font-weight:800;margin-bottom:.35rem;">📑 Upload PDF, Image or Question Paper</h2>
+            <p style="font-size:.74rem;color:#8890a8;line-height:1.65;margin-bottom:1rem;">
+              Upload any PDF, image, or question paper. Claude will read it and you can ask anything — then save the answers directly to a Google Doc.
+            </p>
+
+            <!-- FILE DROP ZONE -->
+            <div id="dropZone" onclick="document.getElementById('fileInput').click()"
+              style="border:2px dashed #2e3347;border-radius:10px;padding:2rem;text-align:center;
+              cursor:pointer;transition:all .15s;margin-bottom:.8rem;background:#1a1d27;">
+              <div style="font-size:2.2rem;margin-bottom:.5rem;">📂</div>
+              <div style="font-size:.82rem;font-weight:700;color:#c8ccd8;margin-bottom:.25rem;">Click to upload or drag & drop</div>
+              <div style="font-size:.7rem;color:#8890a8;">PDF, PNG, JPG, JPEG — max 20MB</div>
+              <input type="file" id="fileInput" accept=".pdf,.png,.jpg,.jpeg"
+                style="display:none" onchange="handleFileUpload(this)">
+            </div>
+
+            <!-- UPLOADED FILE INFO -->
+            <div id="fileInfo" style="display:none;background:#22263a;border:1.5px solid #4ade80;
+              border-radius:8px;padding:.65rem .85rem;margin-bottom:.8rem;
+              display:none;align-items:center;gap:.6rem;">
+              <span style="font-size:1.3rem;" id="fileIcon">📄</span>
+              <div style="flex:1;min-width:0;">
+                <div style="font-size:.78rem;font-weight:700;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;" id="fileName"></div>
+                <div style="font-size:.62rem;color:#8890a8;" id="fileSize"></div>
+              </div>
+              <button class="btn gr-btn" onclick="clearFile()" style="padding:.24rem .5rem;font-size:.64rem;flex-shrink:0;">✕ Clear</button>
+            </div>
+
+            <!-- WHAT TO DO WITH IT -->
+            <div class="lbl">What should Claude do with this file?</div>
+            <textarea class="inp" id="filePrompt" rows="3" style="margin-bottom:.55rem;"
+              placeholder="e.g. Answer all questions in this paper · Summarize this · Extract key points · Explain each topic…"></textarea>
+
+            <!-- QUICK FILE PROMPTS -->
+            <div style="display:grid;grid-template-columns:1fr 1fr;gap:.32rem;margin-bottom:.65rem;">
+              <button class="qa-btn" onclick="setFilePrompt('Answer all the questions in this paper with detailed explanations')">📝 Answer All Questions</button>
+              <button class="qa-btn" onclick="setFilePrompt('Summarize this document in clear bullet points')">📋 Summarize</button>
+              <button class="qa-btn" onclick="setFilePrompt('Extract all key topics and explain each one in detail')">💡 Key Topics</button>
+              <button class="qa-btn" onclick="setFilePrompt('Create short notes for each topic covered in this document')">📖 Short Notes</button>
+              <button class="qa-btn" onclick="setFilePrompt('Create a question bank with answers from this document')">❓ Question Bank</button>
+              <button class="qa-btn" onclick="setFilePrompt('Explain everything in simple language easy to understand')">🧒 Simplify</button>
+            </div>
+
+            <!-- SAVE TO GOOGLE DOC OPTION -->
+            <div style="background:#1e3a1e;border:1px solid #2a6b2a;border-radius:8px;
+              padding:.6rem .85rem;margin-bottom:.65rem;font-size:.72rem;color:#86efac;line-height:1.6;">
+              💾 After Claude answers, you can save the response directly to a new Google Doc with one click!
+            </div>
+
+            <button class="btn g-btn full" id="analyzeBtn" onclick="analyzeFile()"
+              style="font-size:.84rem;padding:.65rem;">
+              🤖 Analyze with Claude
+            </button>
+            <div id="fileStatus" style="display:none;font-size:.7rem;margin-top:.45rem;line-height:1.55;color:#8890a8;"></div>
+
+            <!-- RESULT -->
+            <div id="fileResult" style="display:none;margin-top:1rem;">
+              <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:.6rem;flex-wrap:wrap;gap:.4rem;">
+                <div style="font-size:.72rem;font-weight:800;color:#4ade80;">🤖 Claude's Answer</div>
+                <div style="display:flex;gap:.35rem;flex-wrap:wrap;">
+                  <button class="btn gr-btn" onclick="copyFileResp()" style="padding:.26rem .55rem;font-size:.66rem;">📋 Copy</button>
+                  <button class="btn g-btn" onclick="saveFileRespToDoc()" style="padding:.26rem .55rem;font-size:.66rem;">💾 Save to Google Doc</button>
+                </div>
+              </div>
+              <div class="resp-box" id="fileRespBody"></div>
+              <div id="fileSaveStatus" style="display:none;font-size:.7rem;margin-top:.5rem;line-height:1.55;"></div>
+            </div>
           </div>
         </div>
 
@@ -933,7 +1009,7 @@ function clearHistory() {
 // TABS
 // ─────────────────────────────────────────
 function switchTab(n) {
-  [1, 2].forEach(function(i) {
+  [1, 2, 3].forEach(function(i) {
     document.getElementById('tab' + i).style.display      = i === n ? 'block' : 'none';
     document.getElementById('tab' + i + 'Btn').className  = 'tab' + (i === n ? ' on' : '');
   });
@@ -1022,6 +1098,209 @@ function toast(msg, type) {
     setTimeout(function() { if (t.parentNode) t.parentNode.removeChild(t); }, 360);
   }, 3000);
 }
+
+// ─────────────────────────────────────────
+// PDF / IMAGE UPLOAD & ANALYSIS
+// ─────────────────────────────────────────
+var uploadedFile = null;
+var uploadedB64  = null;
+var uploadedType = null;
+var fileResponse = '';
+
+function setFilePrompt(text) {
+  document.getElementById('filePrompt').value = text;
+}
+
+function handleFileUpload(input) {
+  var file = input.files[0];
+  if (!file) return;
+
+  var maxSize = 20 * 1024 * 1024; // 20MB
+  if (file.size > maxSize) { toast('File too large — max 20MB', 'err'); return; }
+
+  var allowed = ['application/pdf','image/png','image/jpeg','image/jpg'];
+  if (!allowed.includes(file.type)) { toast('Only PDF, PNG, JPG allowed', 'err'); return; }
+
+  uploadedFile = file;
+  uploadedType = file.type;
+
+  // Show file info
+  var icon = file.type === 'application/pdf' ? '📄' : '🖼️';
+  var sizeStr = file.size > 1024*1024
+    ? (file.size / (1024*1024)).toFixed(1) + ' MB'
+    : (file.size / 1024).toFixed(0) + ' KB';
+
+  document.getElementById('fileIcon').textContent = icon;
+  document.getElementById('fileName').textContent = file.name;
+  document.getElementById('fileSize').textContent = sizeStr;
+  document.getElementById('fileInfo').style.display = 'flex';
+  document.getElementById('dropZone').style.borderColor = '#4ade80';
+  document.getElementById('dropZone').style.background = '#1e3a1e';
+
+  // Read as base64
+  var reader = new FileReader();
+  reader.onload = function(e) {
+    var dataUrl = e.target.result;
+    uploadedB64 = dataUrl.split(',')[1];
+    toast('✅ File ready!', 'ok');
+  };
+  reader.readAsDataURL(file);
+}
+
+function clearFile() {
+  uploadedFile = null; uploadedB64 = null; uploadedType = null;
+  document.getElementById('fileInfo').style.display = 'none';
+  document.getElementById('fileInput').value = '';
+  document.getElementById('dropZone').style.borderColor = '#2e3347';
+  document.getElementById('dropZone').style.background = '#1a1d27';
+  document.getElementById('fileResult').style.display = 'none';
+  document.getElementById('fileStatus').style.display = 'none';
+}
+
+async function analyzeFile() {
+  if (!uploadedB64) { toast('Upload a file first', 'err'); return; }
+  var prompt = document.getElementById('filePrompt').value.trim();
+  if (!prompt) { toast('Type what you want Claude to do with this file', 'err'); return; }
+  var key = getApiKey();
+  if (!key) { toast('Add API key in ⚙️ Settings', 'err'); return; }
+
+  var btn = document.getElementById('analyzeBtn');
+  btn.disabled = true;
+  btn.textContent = '⏳ Analyzing…';
+  setFileStatus('🤖 Claude is reading your file…', '');
+  document.getElementById('fileResult').style.display = 'none';
+
+  try {
+    var mediaType = uploadedType; // e.g. application/pdf or image/png
+
+    // Build content array
+    var contentArr;
+    if (mediaType === 'application/pdf') {
+      contentArr = [
+        { type: 'document', source: { type: 'base64', media_type: 'application/pdf', data: uploadedB64 } },
+        { type: 'text', text: prompt }
+      ];
+    } else {
+      contentArr = [
+        { type: 'image', source: { type: 'base64', media_type: mediaType, data: uploadedB64 } },
+        { type: 'text', text: prompt }
+      ];
+    }
+
+    var resp = await fetch('https://api.anthropic.com/v1/messages', {
+      method: 'POST',
+      headers: {
+        'Content-Type'                      : 'application/json',
+        'x-api-key'                         : key,
+        'anthropic-version'                 : '2023-06-01',
+        'anthropic-dangerous-allow-browser' : 'true'
+      },
+      body: JSON.stringify({
+        model      : 'claude-sonnet-4-20250514',
+        max_tokens : 4096,
+        messages   : [{ role: 'user', content: contentArr }]
+      })
+    });
+
+    var data = await resp.json();
+    if (!resp.ok) {
+      throw new Error((data.error && data.error.message) || 'API error ' + resp.status);
+    }
+
+    fileResponse = data.content.map(function(c) { return c.text || ''; }).join('');
+    document.getElementById('fileRespBody').textContent = fileResponse;
+    document.getElementById('fileResult').style.display = 'block';
+    setFileStatus('✅ Done! You can copy or save to Google Doc.', 'ok');
+    toast('✅ Claude finished!', 'ok');
+
+  } catch(e) {
+    setFileStatus('❌ Error: ' + e.message, 'err');
+    toast('Error: ' + e.message, 'err');
+  }
+
+  btn.disabled = false;
+  btn.textContent = '🤖 Analyze with Claude';
+}
+
+function copyFileResp() {
+  if (!fileResponse) return;
+  navigator.clipboard.writeText(fileResponse)
+    .then(function() { toast('📋 Copied!', 'ok'); })
+    .catch(function() { toast('Copy failed', 'err'); });
+}
+
+async function saveFileRespToDoc() {
+  if (!fileResponse) return;
+  if (!state.googleToken) { toast('Sign in to Google first (Step 1)', 'err'); return; }
+
+  var title = uploadedFile ? uploadedFile.name.replace(/\.[^.]+$/, '') + ' — Claude Analysis' : 'Claude Analysis';
+  setFileSaveStatus('📄 Creating Google Doc…', '');
+
+  try {
+    // Create doc
+    var cr     = await gFetch('https://docs.googleapis.com/v1/documents',
+                   { method: 'POST', body: JSON.stringify({ title: title }) });
+    var newDoc = await cr.json();
+    if (!cr.ok) throw new Error((newDoc.error && newDoc.error.message) || 'Could not create doc');
+    var newId = newDoc.documentId;
+
+    // Write content
+    var wr = await gFetch(
+      'https://docs.googleapis.com/v1/documents/' + newId + ':batchUpdate',
+      { method: 'POST', body: JSON.stringify({ requests: [
+        { insertText: { location: { index: 1 }, text: fileResponse } }
+      ]}) }
+    );
+    var wrData = await wr.json();
+    if (!wr.ok) throw new Error((wrData.error && wrData.error.message) || 'Write failed');
+
+    var docUrl = 'https://docs.google.com/document/d/' + newId;
+    setFileSaveStatus('✅ Saved! <a href="' + docUrl + '" target="_blank" style="color:#4ade80;font-weight:700;">Open Google Doc →</a>', 'ok');
+    toast('✅ Saved to Google Doc!', 'ok');
+
+  } catch(e) {
+    setFileSaveStatus('❌ ' + e.message, 'err');
+    toast('Save error: ' + e.message, 'err');
+  }
+}
+
+function setFileStatus(msg, type) {
+  var el = document.getElementById('fileStatus');
+  el.style.display = 'block';
+  el.innerHTML = msg;
+  el.style.color = type === 'ok' ? '#4ade80' : type === 'err' ? '#f87171' : '#8890a8';
+}
+
+function setFileSaveStatus(msg, type) {
+  var el = document.getElementById('fileSaveStatus');
+  el.style.display = 'block';
+  el.innerHTML = msg;
+  el.style.color = type === 'ok' ? '#4ade80' : type === 'err' ? '#f87171' : '#8890a8';
+}
+
+// Drag and drop support
+document.addEventListener('DOMContentLoaded', function() {
+  var dz = document.getElementById('dropZone');
+  if (!dz) return;
+  dz.addEventListener('dragover', function(e) {
+    e.preventDefault();
+    dz.style.borderColor = '#60a5fa';
+    dz.style.background = '#1a2535';
+  });
+  dz.addEventListener('dragleave', function() {
+    dz.style.borderColor = uploadedB64 ? '#4ade80' : '#2e3347';
+    dz.style.background = uploadedB64 ? '#1e3a1e' : '#1a1d27';
+  });
+  dz.addEventListener('drop', function(e) {
+    e.preventDefault();
+    var files = e.dataTransfer.files;
+    if (files.length > 0) {
+      var fakeInput = { files: files };
+      handleFileUpload(fakeInput);
+    }
+  });
+});
+
 </script>
 </body>
 </html>
