@@ -1034,11 +1034,13 @@ function gFetch(url, opts) {
 // ─────────────────────────────────────────
 // STORAGE HELPERS
 // ─────────────────────────────────────────
-function lsGet(k)    { try { return localStorage.getItem(k); }    catch(e) { return null; } }
-function lsSet(k,v)  { try { localStorage.setItem(k, v); }        catch(e) {} }
-function ssGet(k)    { try { return sessionStorage.getItem(k); }   catch(e) { return null; } }
-function ssSet(k,v)  { try { sessionStorage.setItem(k, v); }       catch(e) {} }
-function ssRemove(k) { try { sessionStorage.removeItem(k); }       catch(e) {} }
+function cookieSet(k,v) { try { document.cookie = k+'='+encodeURIComponent(v)+';path=/;max-age=31536000'; } catch(e){} }
+function cookieGet(k)   { try { var m=document.cookie.match('(?:^|; )'+k+'=([^;]*)'); return m?decodeURIComponent(m[1]):null; } catch(e){return null;} }
+function lsGet(k)    { try { return localStorage.getItem(k) || cookieGet(k); } catch(e) { return cookieGet(k); } }
+function lsSet(k,v)  { try { localStorage.setItem(k, v); } catch(e) {} cookieSet(k,v); }
+function ssGet(k)    { try { return sessionStorage.getItem(k) || cookieGet('ss_'+k); } catch(e) { return cookieGet('ss_'+k); } }
+function ssSet(k,v)  { try { sessionStorage.setItem(k, v); } catch(e) {} cookieSet('ss_'+k,v); }
+function ssRemove(k) { try { sessionStorage.removeItem(k); } catch(e) {} cookieSet('ss_'+k,''); }
 
 // ─────────────────────────────────────────
 // DOM HELPERS
@@ -1197,7 +1199,7 @@ function clearFile() {
   dz.querySelector('div').textContent = 'Click to upload or drag & drop';
 }
 
-async function analyzeFile() {
+function analyzeFile() {
   if (!uploadedFiles.length) { toast('Upload at least one file first', 'err'); return; }
   var prompt = document.getElementById('filePrompt').value.trim();
   if (!prompt) { toast('Type what you want Claude to do', 'err'); return; }
@@ -1207,52 +1209,84 @@ async function analyzeFile() {
   var btn = document.getElementById('analyzeBtn');
   btn.disabled = true;
   btn.textContent = '⏳ Claude is analyzing…';
-  setFileStatus('🤖 Claude is reading ' + uploadedFiles.length + ' file(s)…', '');
+  setFileStatus('🤖 Claude is reading ' + uploadedFiles.length + ' file(s)… (may take 30-60 seconds for large files)', '');
   document.getElementById('fileResult').style.display = 'none';
 
-  try {
-    // Build content array — all files + prompt at end
-    var contentArr = [];
-    uploadedFiles.forEach(function(f) {
-      if (f.type === 'application/pdf') {
-        contentArr.push({ type: 'document', source: { type: 'base64', media_type: 'application/pdf', data: f.b64 } });
-      } else {
-        contentArr.push({ type: 'image', source: { type: 'base64', media_type: f.type, data: f.b64 } });
+  // Build content array — all files + prompt at end
+  var contentArr = [];
+  uploadedFiles.forEach(function(f) {
+    if (f.type === 'application/pdf') {
+      contentArr.push({ type: 'document', source: { type: 'base64', media_type: 'application/pdf', data: f.b64 } });
+    } else {
+      contentArr.push({ type: 'image', source: { type: 'base64', media_type: f.type, data: f.b64 } });
+    }
+  });
+  contentArr.push({ type: 'text', text: prompt });
+
+  var payload = JSON.stringify({
+    model      : 'claude-sonnet-4-20250514',
+    max_tokens : 4096,
+    messages   : [{ role: 'user', content: contentArr }]
+  });
+
+  // Use XMLHttpRequest — works more reliably than fetch for large payloads
+  var xhr = new XMLHttpRequest();
+  xhr.open('POST', 'https://api.anthropic.com/v1/messages', true);
+  xhr.setRequestHeader('Content-Type', 'application/json');
+  xhr.setRequestHeader('x-api-key', key);
+  xhr.setRequestHeader('anthropic-version', '2023-06-01');
+  xhr.setRequestHeader('anthropic-dangerous-allow-browser', 'true');
+  xhr.timeout = 300000; // 5 minute timeout for large files
+
+  xhr.onload = function() {
+    btn.disabled = false;
+    btn.textContent = '🤖 Analyze with Claude';
+    try {
+      var data = JSON.parse(xhr.responseText);
+      if (xhr.status !== 200) {
+        var msg = (data.error && data.error.message) || ('API error ' + xhr.status);
+        // Give helpful message for common errors
+        if (xhr.status === 401) msg = 'Invalid API key — check your key in ⚙️ Settings';
+        if (xhr.status === 429) msg = 'Rate limit hit — wait 1 minute and try again';
+        if (xhr.status === 413) msg = 'File too large for API — try a smaller file';
+        if (xhr.status === 529 || xhr.status === 503) msg = 'Anthropic servers busy — try again in a moment';
+        setFileStatus('❌ ' + msg, 'err');
+        toast('Error: ' + msg, 'err');
+        return;
       }
-    });
-    contentArr.push({ type: 'text', text: prompt });
+      fileResponse = data.content.map(function(c){ return c.text || ''; }).join('');
+      document.getElementById('fileRespBody').textContent = fileResponse;
+      document.getElementById('fileResult').style.display = 'block';
+      setFileStatus('✅ Done! ' + uploadedFiles.length + ' file(s) analyzed.', 'ok');
+      toast('✅ Claude finished!', 'ok');
+    } catch(e) {
+      setFileStatus('❌ Could not read response: ' + e.message, 'err');
+      toast('Parse error: ' + e.message, 'err');
+    }
+  };
 
-    var resp = await fetch('https://api.anthropic.com/v1/messages', {
-      method: 'POST',
-      headers: {
-        'Content-Type'                      : 'application/json',
-        'x-api-key'                         : key,
-        'anthropic-version'                 : '2023-06-01',
-        'anthropic-dangerous-allow-browser' : 'true'
-      },
-      body: JSON.stringify({
-        model      : 'claude-sonnet-4-20250514',
-        max_tokens : 4096,
-        messages   : [{ role: 'user', content: contentArr }]
-      })
-    });
+  xhr.onerror = function() {
+    btn.disabled = false;
+    btn.textContent = '🤖 Analyze with Claude';
+    setFileStatus('❌ Network error — check your internet connection and API key, then try again.', 'err');
+    toast('Network error', 'err');
+  };
 
-    var data = await resp.json();
-    if (!resp.ok) throw new Error((data.error && data.error.message) || 'API error ' + resp.status);
+  xhr.ontimeout = function() {
+    btn.disabled = false;
+    btn.textContent = '🤖 Analyze with Claude';
+    setFileStatus('❌ Timed out — file may be too large. Try a smaller file.', 'err');
+    toast('Request timed out', 'err');
+  };
 
-    fileResponse = data.content.map(function(c){ return c.text || ''; }).join('');
-    document.getElementById('fileRespBody').textContent = fileResponse;
-    document.getElementById('fileResult').style.display = 'block';
-    setFileStatus('✅ Done! ' + uploadedFiles.length + ' file(s) analyzed.', 'ok');
-    toast('✅ Claude finished!', 'ok');
-
+  try {
+    xhr.send(payload);
   } catch(e) {
-    setFileStatus('❌ Error: ' + e.message, 'err');
-    toast('Error: ' + e.message, 'err');
+    btn.disabled = false;
+    btn.textContent = '🤖 Analyze with Claude';
+    setFileStatus('❌ Failed to send: ' + e.message, 'err');
+    toast('Send error: ' + e.message, 'err');
   }
-
-  btn.disabled = false;
-  btn.textContent = '🤖 Analyze with Claude';
 }
 
 function copyFileResp() {
