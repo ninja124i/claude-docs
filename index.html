@@ -704,7 +704,7 @@ async function callClaude(system, userMessage) {
       'X-Title'       : 'DeepSeek+Claude x Google Docs'
     },
     body: JSON.stringify({
-      model      : 'deepseek/deepseek-r1-distill-llama-70b:free',
+      model      : 'deepseek/deepseek-r1-0528:free',
       max_tokens : 4096,
       messages   : [
         { role: 'system', content: system },
@@ -1229,7 +1229,7 @@ function analyzeFile() {
 
   // Groq doesn't support PDF/image — extract text prompt only
   var payload = JSON.stringify({
-    model      : 'deepseek/deepseek-r1-distill-llama-70b:free',
+    model      : 'deepseek/deepseek-r1-0528:free',
     max_tokens : 4096,
     messages   : [
       { role: 'system', content: 'You are a helpful medical assistant for MBBS students.' },
