@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Claude × Google Docs</title>
+<title>DeepSeek+Claude × Google Docs</title>
 <style>
 *{box-sizing:border-box;margin:0;padding:0;}
 body{font-family:system-ui,sans-serif;background:#0f1117;color:#e8eaf0;min-height:100vh;font-size:15px;}
@@ -360,7 +360,7 @@ textarea.inp{resize:vertical;line-height:1.55;}
           </div>
           <div id="respLoaded" style="display:none">
             <div class="resp-header">
-              <div class="resp-label">🤖 Claude's Response</div>
+              <div class="resp-label">🤖 AI's Response</div>
               <div class="resp-actions">
                 <button class="btn gr-btn" onclick="copyResponse()"
                   style="padding:.26rem .55rem;font-size:.66rem;">📋 Copy</button>
@@ -430,7 +430,7 @@ textarea.inp{resize:vertical;line-height:1.55;}
             <!-- RESULT -->
             <div id="fileResult" style="display:none;margin-top:1rem;">
               <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:.6rem;flex-wrap:wrap;gap:.4rem;">
-                <div style="font-size:.72rem;font-weight:800;color:#4ade80;">🤖 Claude's Answer</div>
+                <div style="font-size:.72rem;font-weight:800;color:#4ade80;">🤖 AI's Answer</div>
                 <div style="display:flex;gap:.35rem;flex-wrap:wrap;">
                   <button class="btn gr-btn" onclick="copyFileResp()" style="padding:.26rem .55rem;font-size:.66rem;">📋 Copy</button>
                   <button class="btn g-btn" onclick="saveFileRespToDoc()" style="padding:.26rem .55rem;font-size:.66rem;">💾 Save to Google Doc</button>
@@ -688,27 +688,26 @@ function docToText(doc) {
 }
 
 // ─────────────────────────────────────────
-// CALL CLAUDE API
-// Uses anthropic-dangerous-allow-browser header
-// which is the official way for browser apps
+// CALL DEEPSEEK API (Free credits on signup)
+// Model: deepseek-chat (DeepSeek V3)
 // ─────────────────────────────────────────
 async function callClaude(system, userMessage) {
   var key = getApiKey();
-  if (!key) throw new Error('No API key. Add it in ⚙️ Settings.');
+  if (!key) throw new Error('No API key. Add your DeepSeek key in ⚙️ Settings.');
 
-  var resp = await fetch('https://api.anthropic.com/v1/messages', {
+  var resp = await fetch('https://api.deepseek.com/chat/completions', {
     method: 'POST',
     headers: {
-      'Content-Type'                      : 'application/json',
-      'x-api-key'                         : key,
-      'anthropic-version'                 : '2023-06-01',
-      'anthropic-dangerous-allow-browser' : 'true'
+      'Content-Type'  : 'application/json',
+      'Authorization' : 'Bearer ' + key
     },
     body: JSON.stringify({
-      model      : 'claude-sonnet-4-20250514',
+      model      : 'deepseek-chat',
       max_tokens : 4096,
-      system     : system,
-      messages   : [{ role: 'user', content: userMessage }]
+      messages   : [
+        { role: 'system', content: system },
+        { role: 'user',   content: userMessage }
+      ]
     })
   });
 
@@ -716,10 +715,13 @@ async function callClaude(system, userMessage) {
 
   if (!resp.ok) {
     var errMsg = (data.error && data.error.message) || ('API error ' + resp.status);
+    if (resp.status === 401) errMsg = 'Invalid DeepSeek API key — check ⚙️ Settings';
+    if (resp.status === 429) errMsg = 'Rate limit — wait 1 minute and try again';
+    if (resp.status === 402) errMsg = 'DeepSeek credits empty — top up at platform.deepseek.com';
     throw new Error(errMsg);
   }
 
-  return data.content.map(function(c) { return c.text || ''; }).join('');
+  return data.choices[0].message.content || '';
 }
 
 // ─────────────────────────────────────────
@@ -739,7 +741,7 @@ async function sendPrompt() {
   hide('respEmpty');
   show('respLoaded');
   document.getElementById('respBody').innerHTML =
-    '<span class="spin"></span> Claude is thinking…';
+    '<span class="spin"></span> AI is thinking…';
   hide('writeStatus');
   hide('replaceDocBtn');
   hide('appendDocBtn');
@@ -1223,20 +1225,21 @@ function analyzeFile() {
   });
   contentArr.push({ type: 'text', text: prompt });
 
+  // Groq doesn't support PDF/image — extract text prompt only
   var payload = JSON.stringify({
-    model      : 'claude-sonnet-4-20250514',
+    model      : 'deepseek-chat',
     max_tokens : 4096,
-    messages   : [{ role: 'user', content: contentArr }]
+    messages   : [
+      { role: 'system', content: 'You are a helpful medical assistant for MBBS students.' },
+      { role: 'user',   content: prompt }
+    ]
   });
 
-  // Use XMLHttpRequest — works more reliably than fetch for large payloads
   var xhr = new XMLHttpRequest();
-  xhr.open('POST', 'https://api.anthropic.com/v1/messages', true);
+  xhr.open('POST', 'https://api.deepseek.com/chat/completions', true);
   xhr.setRequestHeader('Content-Type', 'application/json');
-  xhr.setRequestHeader('x-api-key', key);
-  xhr.setRequestHeader('anthropic-version', '2023-06-01');
-  xhr.setRequestHeader('anthropic-dangerous-allow-browser', 'true');
-  xhr.timeout = 300000; // 5 minute timeout for large files
+  xhr.setRequestHeader('Authorization', 'Bearer ' + key);
+  xhr.timeout = 120000;
 
   xhr.onload = function() {
     btn.disabled = false;
@@ -1245,16 +1248,13 @@ function analyzeFile() {
       var data = JSON.parse(xhr.responseText);
       if (xhr.status !== 200) {
         var msg = (data.error && data.error.message) || ('API error ' + xhr.status);
-        // Give helpful message for common errors
-        if (xhr.status === 401) msg = 'Invalid API key — check your key in ⚙️ Settings';
-        if (xhr.status === 429) msg = 'Rate limit hit — wait 1 minute and try again';
-        if (xhr.status === 413) msg = 'File too large for API — try a smaller file';
-        if (xhr.status === 529 || xhr.status === 503) msg = 'Anthropic servers busy — try again in a moment';
+        if (xhr.status === 401) msg = 'Invalid DeepSeek API key — check ⚙️ Settings';
+        if (xhr.status === 429) msg = 'Rate limit — wait 1 minute and try again';
         setFileStatus('❌ ' + msg, 'err');
         toast('Error: ' + msg, 'err');
         return;
       }
-      fileResponse = data.content.map(function(c){ return c.text || ''; }).join('');
+      fileResponse = (data.choices && data.choices[0] && data.choices[0].message && data.choices[0].message.content) || '';
       document.getElementById('fileRespBody').textContent = fileResponse;
       document.getElementById('fileResult').style.display = 'block';
       setFileStatus('✅ Done! ' + uploadedFiles.length + ' file(s) analyzed.', 'ok');
