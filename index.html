@@ -193,10 +193,10 @@ textarea.inp{resize:vertical;line-height:1.55;}
     </div>
     <div class="mstep">
       <div class="msn">3</div>
-      <div class="mst">Paste your key below — starts with <span class="code">sk-</span></div>
+      <div class="mst">Paste your key below — starts with <span class="code">sk-or-</span></div>
     </div>
     <input class="inp" type="password" id="setupKeyInp"
-      placeholder="sk-..." style="margin-bottom:.65rem;font-family:monospace;font-size:.8rem;" autocomplete="off">
+      placeholder="sk-or-... (free from openrouter.ai)" style="margin-bottom:.65rem;font-family:monospace;font-size:.8rem;" autocomplete="off">
     <button class="btn g-btn full" style="font-size:.84rem;padding:.6rem;" onclick="saveApiKey(false)">
       Save & Continue →
     </button>
@@ -214,7 +214,7 @@ textarea.inp{resize:vertical;line-height:1.55;}
     <div class="lbl">Anthropic API Key</div>
     <div class="row" style="margin-bottom:.65rem">
       <input class="inp" type="password" id="settingsKeyInp"
-        placeholder="sk-..." style="font-family:monospace;" autocomplete="off">
+        placeholder="sk-or-... (free from openrouter.ai)" style="font-family:monospace;" autocomplete="off">
       <button class="btn g-btn" onclick="saveApiKey(true)">Save</button>
     </div>
     <div class="divider"></div>
@@ -688,21 +688,23 @@ function docToText(doc) {
 }
 
 // ─────────────────────────────────────────
-// CALL DEEPSEEK API (Free credits on signup)
-// Model: deepseek-chat (DeepSeek V3)
+// CALL OPENROUTER API — DeepSeek R1 Free
+// Free forever via openrouter.ai
 // ─────────────────────────────────────────
 async function callClaude(system, userMessage) {
   var key = getApiKey();
-  if (!key) throw new Error('No API key. Add your DeepSeek key in ⚙️ Settings.');
+  if (!key) throw new Error('No API key. Add your OpenRouter key in ⚙️ Settings.');
 
-  var resp = await fetch('https://api.deepseek.com/chat/completions', {
+  var resp = await fetch('https://openrouter.ai/api/v1/chat/completions', {
     method: 'POST',
     headers: {
       'Content-Type'  : 'application/json',
-      'Authorization' : 'Bearer ' + key
+      'Authorization' : 'Bearer ' + key,
+      'HTTP-Referer'  : 'https://ninja124i.github.io/claude-docs',
+      'X-Title'       : 'DeepSeek+Claude x Google Docs'
     },
     body: JSON.stringify({
-      model      : 'deepseek-chat',
+      model      : 'deepseek/deepseek-r1:free',
       max_tokens : 4096,
       messages   : [
         { role: 'system', content: system },
@@ -715,9 +717,9 @@ async function callClaude(system, userMessage) {
 
   if (!resp.ok) {
     var errMsg = (data.error && data.error.message) || ('API error ' + resp.status);
-    if (resp.status === 401) errMsg = 'Invalid DeepSeek API key — check ⚙️ Settings';
+    if (resp.status === 401) errMsg = 'Invalid OpenRouter key — check ⚙️ Settings';
     if (resp.status === 429) errMsg = 'Rate limit — wait 1 minute and try again';
-    if (resp.status === 402) errMsg = 'DeepSeek credits empty — top up at platform.deepseek.com';
+    if (resp.status === 402) errMsg = 'OpenRouter credits needed — check openrouter.ai';
     throw new Error(errMsg);
   }
 
@@ -1227,7 +1229,7 @@ function analyzeFile() {
 
   // Groq doesn't support PDF/image — extract text prompt only
   var payload = JSON.stringify({
-    model      : 'deepseek-chat',
+    model      : 'deepseek/deepseek-r1:free',
     max_tokens : 4096,
     messages   : [
       { role: 'system', content: 'You are a helpful medical assistant for MBBS students.' },
@@ -1236,9 +1238,11 @@ function analyzeFile() {
   });
 
   var xhr = new XMLHttpRequest();
-  xhr.open('POST', 'https://api.deepseek.com/chat/completions', true);
+  xhr.open('POST', 'https://openrouter.ai/api/v1/chat/completions', true);
   xhr.setRequestHeader('Content-Type', 'application/json');
   xhr.setRequestHeader('Authorization', 'Bearer ' + key);
+  xhr.setRequestHeader('HTTP-Referer', 'https://ninja124i.github.io/claude-docs');
+  xhr.setRequestHeader('X-Title', 'DeepSeek+Claude x Google Docs');
   xhr.timeout = 120000;
 
   xhr.onload = function() {
@@ -1248,7 +1252,7 @@ function analyzeFile() {
       var data = JSON.parse(xhr.responseText);
       if (xhr.status !== 200) {
         var msg = (data.error && data.error.message) || ('API error ' + xhr.status);
-        if (xhr.status === 401) msg = 'Invalid DeepSeek API key — check ⚙️ Settings';
+        if (xhr.status === 401) msg = 'Invalid OpenRouter key — check ⚙️ Settings';
         if (xhr.status === 429) msg = 'Rate limit — wait 1 minute and try again';
         setFileStatus('❌ ' + msg, 'err');
         toast('Error: ' + msg, 'err');
