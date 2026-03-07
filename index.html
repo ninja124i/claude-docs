@@ -193,10 +193,10 @@ textarea.inp{resize:vertical;line-height:1.55;}
     </div>
     <div class="mstep">
       <div class="msn">3</div>
-      <div class="mst">Paste your key below — starts with <span class="code">sk-or-</span></div>
+      <div class="mst">Paste your key below — starts with <span class="code">gsk_</span></div>
     </div>
     <input class="inp" type="password" id="setupKeyInp"
-      placeholder="sk-or-... (free from openrouter.ai)" style="margin-bottom:.65rem;font-family:monospace;font-size:.8rem;" autocomplete="off">
+      placeholder="gsk_... (free from console.groq.com)" style="margin-bottom:.65rem;font-family:monospace;font-size:.8rem;" autocomplete="off">
     <button class="btn g-btn full" style="font-size:.84rem;padding:.6rem;" onclick="saveApiKey(false)">
       Save & Continue →
     </button>
@@ -214,7 +214,7 @@ textarea.inp{resize:vertical;line-height:1.55;}
     <div class="lbl">Anthropic API Key</div>
     <div class="row" style="margin-bottom:.65rem">
       <input class="inp" type="password" id="settingsKeyInp"
-        placeholder="sk-or-... (free from openrouter.ai)" style="font-family:monospace;" autocomplete="off">
+        placeholder="gsk_... (free from console.groq.com)" style="font-family:monospace;" autocomplete="off">
       <button class="btn g-btn" onclick="saveApiKey(true)">Save</button>
     </div>
     <div class="divider"></div>
@@ -692,47 +692,13 @@ function docToText(doc) {
 // Tries free models one by one automatically
 // If one fails → next one tried instantly
 // ─────────────────────────────────────────
-var FREE_MODELS = [
-  'deepseek/deepseek-r1-0528:free',
-  'deepseek/deepseek-r1:free',
-  'deepseek/deepseek-chat:free',
-  'deepseek/deepseek-r1-distill-llama-70b:free',
-  'deepseek/deepseek-r1-distill-qwen-32b:free',
-  'meta-llama/llama-3.3-70b-instruct:free',
-  'meta-llama/llama-3.1-70b-instruct:free'
-];
-
-async function tryModel(model, key, system, userMessage) {
-  var resp = await fetch('https://openrouter.ai/api/v1/chat/completions', {
-    method: 'POST',
-    headers: {
-      'Content-Type'  : 'application/json',
-      'Authorization' : 'Bearer ' + key,
-      'HTTP-Referer'  : 'https://ninja124i.github.io/claude-docs',
-      'X-Title'       : 'DeepSeek+Claude x Google Docs'
-    },
-    body: JSON.stringify({
-      model      : model,
-      max_tokens : 4096,
-      messages   : [
-        { role: 'system', content: system },
-        { role: 'user',   content: userMessage }
-      ]
-    })
-  });
-  var data = await resp.json();
-  if (!resp.ok) {
-    var e = (data.error && data.error.message) || ('API error ' + resp.status);
-    if (resp.status === 401) throw new Error('__AUTH__');
-    throw new Error(e);
-  }
-  var text = data.choices && data.choices[0] && data.choices[0].message && data.choices[0].message.content;
-  if (!text) throw new Error('Empty response');
-  return text;
-}
-
-async function tryGroqFallback(system, userMessage) {
+// ─────────────────────────────────────────
+// CALL GROQ API — Llama 3.3 70B (Free forever)
+// ─────────────────────────────────────────
+async function callClaude(system, userMessage) {
   var key = getApiKey();
+  if (!key) throw new Error('No API key. Add your Groq key in ⚙️ Settings.');
+
   var resp = await fetch('https://api.groq.com/openai/v1/chat/completions', {
     method: 'POST',
     headers: {
@@ -748,40 +714,15 @@ async function tryGroqFallback(system, userMessage) {
       ]
     })
   });
+
   var data = await resp.json();
-  if (!resp.ok) throw new Error((data.error && data.error.message) || 'Groq error');
-  return data.choices[0].message.content || '';
-}
-
-async function callClaude(system, userMessage) {
-  var key = getApiKey();
-  if (!key) throw new Error('No API key. Add your OpenRouter key in ⚙️ Settings.');
-
-  var lastErr = '';
-
-  // Try all OpenRouter free models first
-  for (var i = 0; i < FREE_MODELS.length; i++) {
-    var model = FREE_MODELS[i];
-    try {
-      toast('🔄 Trying ' + model.split('/')[1].split(':')[0] + '…', '');
-      var result = await tryModel(model, key, system, userMessage);
-      if (i > 0) toast('✅ Used: ' + model.split('/')[1].split(':')[0], 'ok');
-      return result;
-    } catch(e) {
-      if (e.message === '__AUTH__') throw new Error('Invalid OpenRouter key — check ⚙️ Settings');
-      lastErr = e.message;
-    }
+  if (!resp.ok) {
+    var errMsg = (data.error && data.error.message) || ('API error ' + resp.status);
+    if (resp.status === 401) errMsg = 'Invalid Groq key — check ⚙️ Settings';
+    if (resp.status === 429) errMsg = 'Rate limit — wait 1 minute and try again';
+    throw new Error(errMsg);
   }
-
-  // Final fallback — Groq Llama 3.3 70B (always free, different API)
-  try {
-    toast('🔄 Trying Groq Llama 3.3…', '');
-    var groqResult = await tryGroqFallback(system, userMessage);
-    toast('✅ Groq Llama answered!', 'ok');
-    return groqResult;
-  } catch(e) { lastErr = e.message; }
-
-  throw new Error('All models failed. Try again in 1 minute.');
+  return data.choices[0].message.content || '';
 }
 
 // ─────────────────────────────────────────
@@ -1287,7 +1228,7 @@ function analyzeFile() {
 
   // Groq doesn't support PDF/image — extract text prompt only
   var payload = JSON.stringify({
-    model      : FREE_MODELS[0],
+    model      : 'llama-3.3-70b-versatile',
     max_tokens : 4096,
     messages   : [
       { role: 'system', content: 'You are a helpful medical assistant for MBBS students.' },
@@ -1296,11 +1237,11 @@ function analyzeFile() {
   });
 
   var xhr = new XMLHttpRequest();
-  xhr.open('POST', 'https://openrouter.ai/api/v1/chat/completions', true);
+  xhr.open('POST', 'https://api.groq.com/openai/v1/chat/completions', true);
   xhr.setRequestHeader('Content-Type', 'application/json');
   xhr.setRequestHeader('Authorization', 'Bearer ' + key);
-  xhr.setRequestHeader('HTTP-Referer', 'https://ninja124i.github.io/claude-docs');
-  xhr.setRequestHeader('X-Title', 'DeepSeek+Claude x Google Docs');
+  
+  
   xhr.timeout = 120000;
 
   xhr.onload = function() {
@@ -1310,7 +1251,7 @@ function analyzeFile() {
       var data = JSON.parse(xhr.responseText);
       if (xhr.status !== 200) {
         var msg = (data.error && data.error.message) || ('API error ' + xhr.status);
-        if (xhr.status === 401) msg = 'Invalid OpenRouter key — check ⚙️ Settings';
+        if (xhr.status === 401) msg = 'Invalid Groq key — check ⚙️ Settings';
         if (xhr.status === 429) msg = 'Rate limit — wait 1 minute and try again';
         setFileStatus('❌ ' + msg, 'err');
         toast('Error: ' + msg, 'err');
