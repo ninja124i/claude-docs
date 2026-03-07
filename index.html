@@ -688,13 +688,19 @@ function docToText(doc) {
 }
 
 // ─────────────────────────────────────────
-// CALL OPENROUTER API — DeepSeek R1 Free
-// Free forever via openrouter.ai
+// CALL OPENROUTER API — Auto Fallback
+// Tries free models one by one automatically
+// If one fails → next one tried instantly
 // ─────────────────────────────────────────
-async function callClaude(system, userMessage) {
-  var key = getApiKey();
-  if (!key) throw new Error('No API key. Add your OpenRouter key in ⚙️ Settings.');
+var FREE_MODELS = [
+  'deepseek/deepseek-r1-0528:free',
+  'deepseek/deepseek-r1:free',
+  'deepseek/deepseek-chat:free',
+  'deepseek/deepseek-r1-distill-llama-70b:free',
+  'deepseek/deepseek-r1-distill-qwen-32b:free'
+];
 
+async function tryModel(model, key, system, userMessage) {
   var resp = await fetch('https://openrouter.ai/api/v1/chat/completions', {
     method: 'POST',
     headers: {
@@ -704,7 +710,7 @@ async function callClaude(system, userMessage) {
       'X-Title'       : 'DeepSeek+Claude x Google Docs'
     },
     body: JSON.stringify({
-      model      : 'deepseek/deepseek-r1-0528:free',
+      model      : model,
       max_tokens : 4096,
       messages   : [
         { role: 'system', content: system },
@@ -712,18 +718,38 @@ async function callClaude(system, userMessage) {
       ]
     })
   });
-
   var data = await resp.json();
-
   if (!resp.ok) {
-    var errMsg = (data.error && data.error.message) || ('API error ' + resp.status);
-    if (resp.status === 401) errMsg = 'Invalid OpenRouter key — check ⚙️ Settings';
-    if (resp.status === 429) errMsg = 'Rate limit — wait 1 minute and try again';
-    if (resp.status === 402) errMsg = 'OpenRouter credits needed — check openrouter.ai';
-    throw new Error(errMsg);
+    var e = (data.error && data.error.message) || ('API error ' + resp.status);
+    if (resp.status === 401) throw new Error('__AUTH__');
+    throw new Error(e);
   }
+  var text = data.choices && data.choices[0] && data.choices[0].message && data.choices[0].message.content;
+  if (!text) throw new Error('Empty response');
+  return text;
+}
 
-  return data.choices[0].message.content || '';
+async function callClaude(system, userMessage) {
+  var key = getApiKey();
+  if (!key) throw new Error('No API key. Add your OpenRouter key in ⚙️ Settings.');
+
+  var lastErr = '';
+  for (var i = 0; i < FREE_MODELS.length; i++) {
+    var model = FREE_MODELS[i];
+    try {
+      toast('🔄 Trying ' + model.split('/')[1].split(':')[0] + '…', '');
+      var result = await tryModel(model, key, system, userMessage);
+      if (i > 0) toast('✅ Used fallback: ' + model.split('/')[1].split(':')[0], 'ok');
+      return result;
+    } catch(e) {
+      if (e.message === '__AUTH__') {
+        throw new Error('Invalid OpenRouter key — check ⚙️ Settings');
+      }
+      lastErr = e.message;
+      // Try next model
+    }
+  }
+  throw new Error('All free models failed. Last error: ' + lastErr);
 }
 
 // ─────────────────────────────────────────
@@ -1229,7 +1255,7 @@ function analyzeFile() {
 
   // Groq doesn't support PDF/image — extract text prompt only
   var payload = JSON.stringify({
-    model      : 'deepseek/deepseek-r1-0528:free',
+    model      : FREE_MODELS[0],
     max_tokens : 4096,
     messages   : [
       { role: 'system', content: 'You are a helpful medical assistant for MBBS students.' },
